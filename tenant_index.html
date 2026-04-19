@@ -7,13 +7,483 @@
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style><!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>กล่องสุ่มรางวัล</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { background: #E8EDF2; font-family: 'Sarabun', sans-serif; overflow-x: hidden; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
 :root {
-  --bg: #E8EDF2; --sd: #C5CCD3; --sl: #FFFFFF;
-  --t1: #1F2937; --t2: #6B7280; --t3: #9CA3AF;
-  --teal: #27A896; --teal-d: #1B5E56;
+  --lb-bg:     #0F172A;
+  --lb-card:   #1E293B;
+  --lb-border: #334155;
+  --lb-gold:   #F59E0B;
+  --lb-teal:   #14B8A6;
+  --lb-text:   #F1F5F9;
+  --lb-sub:    #94A3B8;
+}
+
+html, body {
+  background: var(--lb-bg);
+  min-height: 100vh;
+  font-family: 'Sarabun', sans-serif;
+  color: var(--lb-text);
+  padding-bottom: 40px;
+}
+
+/* ===== HEADER ===== */
+.header {
+  text-align: center;
+  padding: 32px 20px 20px;
+  background: linear-gradient(180deg, #1E293B 0%, transparent 100%);
+}
+.header-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--lb-gold);
+  text-shadow: 0 0 20px rgba(245,158,11,0.5);
+}
+.header-sub   { font-size: 14px; color: var(--lb-sub); margin-top: 6px; }
+.header-room  { font-size: 15px; color: var(--lb-teal); margin-top: 8px; font-weight: 700; }
+.header-tier  { font-size: 13px; color: var(--lb-sub); margin-top: 4px; }
+
+/* ===== COUNT BADGE ===== */
+.count-wrap  { display: flex; justify-content: center; margin: 16px 0 24px; }
+.count-badge {
+  background: var(--lb-card);
+  border: 1px solid var(--lb-gold);
+  border-radius: 99px;
+  padding: 10px 28px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--lb-gold);
+}
+
+/* ===== GRID ===== */
+.lb-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 0 20px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* ===== CARD ===== */
+.lb-card {
+  background: var(--lb-card);
+  border: 1px solid var(--lb-border);
+  border-radius: 20px;
+  padding: 24px 16px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.lb-card:active:not(.used):not(.locked) { transform: scale(0.96); }
+.lb-card.used   { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
+.lb-card.locked { opacity: 0.3; cursor: not-allowed; }
+
+/* ===== ICON ===== */
+.lb-icon-wrap { position: relative; width: 80px; height: 80px; margin: 0 auto 14px; }
+.lb-circle    { width: 80px; height: 80px; border-radius: 50%; border: 3px solid transparent; display: flex; align-items: center; justify-content: center; font-size: 36px; position: relative; }
+.lb-circle.gold   { background: rgba(245,158,11,0.15);  border-color: var(--lb-gold); }
+.lb-circle.teal   { background: rgba(20,184,166,0.15);  border-color: var(--lb-teal); }
+.lb-circle.purple { background: rgba(139,92,246,0.15);  border-color: #8B5CF6; }
+.lb-circle.red    { background: rgba(239,68,68,0.15);   border-color: #EF4444; }
+
+.lb-arc { position: absolute; inset: -4px; border-radius: 50%; border: 3px solid transparent; }
+.lb-arc.gold   { border-top-color: var(--lb-gold); border-right-color: var(--lb-gold); transform: rotate(-30deg); }
+.lb-arc.teal   { border-top-color: var(--lb-teal); border-right-color: var(--lb-teal); transform: rotate(-30deg); }
+.lb-arc.purple { border-top-color: #8B5CF6; border-right-color: #8B5CF6; transform: rotate(-30deg); }
+.lb-arc.red    { border-top-color: #EF4444; border-right-color: #EF4444; transform: rotate(-30deg); }
+
+.lb-name { font-size: 16px; font-weight: 700; color: var(--lb-text); }
+.lb-desc { font-size: 12px; color: var(--lb-sub); margin-top: 4px; }
+.lb-ms   { font-size: 11px; font-weight: 700; margin-top: 10px; padding: 4px 10px; border-radius: 99px; display: inline-block; }
+.ms-gold   { background: rgba(245,158,11,0.2); color: var(--lb-gold); }
+.ms-teal   { background: rgba(20,184,166,0.2); color: var(--lb-teal); }
+.ms-purple { background: rgba(139,92,246,0.2); color: #A78BFA; }
+.ms-red    { background: rgba(239,68,68,0.2);  color: #FCA5A5; }
+
+/* ===== POPUP ===== */
+.lb-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.lb-overlay.show { display: flex; }
+
+.lb-popup {
+  background: var(--lb-card);
+  border: 1px solid var(--lb-border);
+  border-radius: 24px;
+  width: calc(100% - 48px);
+  max-width: 320px;
+  padding: 32px 24px 28px;
+  text-align: center;
+  animation: lbPopIn 0.3s cubic-bezier(.175,.885,.32,1.275);
+}
+@keyframes lbPopIn {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.lb-spin-wrap { width: 100px; height: 100px; margin: 0 auto 20px; position: relative; }
+.lb-spin-ring { width: 100px; height: 100px; border-radius: 50%; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--lb-gold); position: absolute; animation: lbSpin 0.8s linear infinite; }
+@keyframes lbSpin { to { transform: rotate(360deg); } }
+
+.lb-spin-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 44px; animation: lbBounce 0.5s ease infinite alternate; }
+@keyframes lbBounce { from { transform: scale(0.9); } to { transform: scale(1.1); } }
+
+.lb-result      { display: none; }
+.lb-result.show { display: block; animation: lbFade 0.4s ease; }
+@keyframes lbFade {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.lb-confirm-btn {
+  width: 100%; padding: 14px; border: none; border-radius: 12px;
+  background: linear-gradient(135deg, var(--lb-teal), #1D4ED8);
+  color: white; font-size: 17px; font-weight: 700;
+  font-family: 'Sarabun', sans-serif; cursor: pointer;
+}
+
+/* ===== CONFETTI ===== */
+.lb-confetti      { position: fixed; inset: 0; pointer-events: none; z-index: 110; display: none; }
+.lb-confetti.show { display: block; }
+.lb-dot { position: absolute; border-radius: 2px; animation: lbFall linear forwards; }
+@keyframes lbFall {
+  0%   { transform: translateY(-20px) rotate(0deg);   opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* ===== TOAST ===== */
+.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 12px 24px; border-radius: 99px; font-size: 15px; display: none; z-index: 999; text-align: center; max-width: 85%; font-weight: 700; box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+.toast.success { background: #065F46; color: white; display: block; }
+.toast.error   { background: #7F1D1D; color: white; display: block; }
+
+/* ===== LOADING ===== */
+.loading {
+  text-align: center;
+  color: var(--lb-sub);
+  padding: 60px 20px;
+  font-size: 16px;
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-title">🎁 กล่องสุ่มรางวัล</div>
+  <div class="header-sub">สะสมจากการเช็คอินติดต่อกัน</div>
+  <div class="header-room" id="lb-room-label"></div>
+  <div class="header-tier" id="lb-tier-label"></div>
+</div>
+
+<!-- COUNT -->
+<div class="count-wrap">
+  <div class="count-badge">🎁 กล่องที่มี: <span id="lb-count">0</span> ใบ</div>
+</div>
+
+<!-- GRID -->
+<div class="lb-grid" id="lb-grid">
+  <div class="loading" style="grid-column:1/-1">⏳ กำลังโหลด...</div>
+</div>
+
+<!-- POPUP -->
+<div class="lb-overlay" id="lb-overlay">
+  <div class="lb-popup">
+    <div id="lb-spin-state">
+      <div class="lb-spin-wrap">
+        <div class="lb-spin-ring"></div>
+        <div class="lb-spin-icon">🎁</div>
+      </div>
+      <div style="font-size:18px;font-weight:700;color:#F1F5F9;margin-bottom:6px" id="lb-popup-title">กำลังเปิดกล่อง...</div>
+      <div style="font-size:13px;color:#94A3B8">รอสักครู่นะครับ ✨</div>
+    </div>
+    <div class="lb-result" id="lb-result-state">
+      <div style="font-size:64px;margin-bottom:12px" id="lb-result-icon">🎉</div>
+      <div style="font-size:22px;font-weight:700;color:#F59E0B;margin-bottom:6px">ยินดีด้วย!</div>
+      <div style="font-size:15px;color:#94A3B8;margin-bottom:8px" id="lb-result-name"></div>
+      <div style="font-size:44px;font-weight:700;color:#14B8A6" id="lb-result-amount"></div>
+      <div style="font-size:14px;color:#94A3B8;margin-bottom:20px">บาท ลดจากบิลเดือนนี้</div>
+      <button class="lb-confirm-btn" onclick="closeLootPopup()">รับรางวัล 🎊</button>
+    </div>
+  </div>
+</div>
+
+<div class="lb-confetti" id="lb-confetti"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+//  CONFIG
+// ============================================================
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbx57fi00n2RKu7b5jHu67vzUVwrez1cx6RhW0lvvM9cIkt6_amJzMoVJOJvrwD7imHBnA/exec';
+const LIFF_ID = '2004478373-pUgVSZTj'; // ← เปลี่ยนเป็น LIFF ID ใหม่
+
+const LB_CONFIG = [
+  { milestone: 7,  name: 'กล่องเงิน',     desc: 'ส่วนลด 5–10 บาท',  theme: 'gold',   ms: 'ms-gold'   },
+  { milestone: 14, name: 'กล่องทอง',      desc: 'ส่วนลด 5–20 บาท', theme: 'teal',   ms: 'ms-teal'   },
+  { milestone: 21, name: 'กล่องแพลตินัม', desc: 'ส่วนลด 5–25 บาท', theme: 'purple', ms: 'ms-purple' },
+  { milestone: 28, name: 'กล่องตำนาน',    desc: 'ส่วนลด 5–45 บาท', theme: 'red',    ms: 'ms-red'    },
+];
+
+let lbOpening   = false;
+let liffReady   = false;
+let liffProfile = null;
+
+// ============================================================
+//  UTILS
+// ============================================================
+async function callGAS(action, params = {}) {
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action, ...params })
+  });
+  return res.json();
+}
+
+function showToast(msg, type = 'success', duration = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className   = 'toast ' + type;
+  setTimeout(() => t.className = 'toast', duration);
+}
+
+// ============================================================
+//  LIFF
+// ============================================================
+async function initLiff() {
+  try {
+    await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true });
+    liffReady = true;
+    if (liff.isLoggedIn()) {
+      liffProfile = await liff.getProfile();
+    }
+  } catch (e) {
+    console.warn('LIFF init failed:', e);
+  }
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+async function init() {
+  await initLiff();
+
+  const params = new URLSearchParams(window.location.search);
+  const room   = params.get('room');
+
+  if (room) {
+    // เปิดจาก LINE flex ที่มี ?room=xxx
+    document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
+    loadLootBoxForRoom(room);
+  } else if (liffReady && liff.isLoggedIn() && liffProfile) {
+    // เปิดจาก rich menu (ไม่มี room param → ใช้ LINE userId)
+    loadLootBoxByUserId(liffProfile.userId);
+  } else {
+    document.getElementById('lb-grid').innerHTML =
+      '<div class="loading" style="grid-column:1/-1;color:#EF4444">❌ กรุณาเปิดผ่าน LINE ครับ</div>';
+  }
+}
+
+// ── โหลดด้วย roomNo (มาจาก URL param) ──
+async function loadLootBoxForRoom(roomNo) {
+  try {
+    const result = await callGAS('getLootBoxDataByRoom', { roomNo });
+    if (!result.success) {
+      document.getElementById('lb-grid').innerHTML =
+        `<div class="loading" style="grid-column:1/-1;color:#EF4444">❌ ${result.message || 'โหลดไม่ได้'}</div>`;
+      return;
+    }
+    renderPage(result);
+  } catch (e) {
+    document.getElementById('lb-grid').innerHTML =
+      '<div class="loading" style="grid-column:1/-1;color:#EF4444">❌ โหลดข้อมูลไม่ได้</div>';
+  }
+}
+
+// ── โหลดด้วย userId (มาจาก rich menu) ──
+async function loadLootBoxByUserId(userId) {
+  try {
+    const result = await callGAS('getLootBoxData', { userId });
+    if (!result.success) {
+      document.getElementById('lb-grid').innerHTML =
+        `<div class="loading" style="grid-column:1/-1;color:#EF4444">❌ ${result.message || 'โหลดไม่ได้'}</div>`;
+      return;
+    }
+    renderPage(result);
+  } catch (e) {
+    document.getElementById('lb-grid').innerHTML =
+      '<div class="loading" style="grid-column:1/-1;color:#EF4444">❌ โหลดข้อมูลไม่ได้</div>';
+  }
+}
+
+// ── render ──
+function renderPage(result) {
+  document.getElementById('lb-room-label').textContent = result.roomNo ? 'ห้อง ' + result.roomNo : '';
+  document.getElementById('lb-count').textContent      = result.totalBox || 0;
+  renderLootGrid(result.boxes || {});
+}
+
+// ── render grid ──
+function renderLootGrid(boxes) {
+  const grid = document.getElementById('lb-grid');
+  grid.innerHTML = '';
+
+  LB_CONFIG.forEach(cfg => {
+    const info     = boxes[cfg.milestone] || {};
+    const hasBox   = info.token && !info.opened;
+    const isOpened = info.token &&  info.opened;
+    const isLocked = !info.token;
+    const icon     = isOpened ? '🎁' : isLocked ? '🔒' : '🎁';
+
+    const card = document.createElement('div');
+    card.className = 'lb-card' + (isOpened ? ' used' : '') + (isLocked ? ' locked' : '');
+    card.id = 'lb-card-' + cfg.milestone;
+    card.innerHTML = `
+      <div class="lb-icon-wrap">
+        <div class="lb-circle ${cfg.theme}">
+          <div class="lb-arc ${cfg.theme}"></div>
+          ${icon}
+        </div>
+      </div>
+      <div class="lb-name">${cfg.name}</div>
+      <div class="lb-desc">${isOpened ? 'เปิดแล้ว' : isLocked ? 'ยังไม่ถึงรอบ' : cfg.desc}</div>
+      <div class="lb-ms ${cfg.ms}">ครบ ${cfg.milestone} วัน</div>`;
+
+    if (hasBox) {
+      card.onclick = () => startLootOpen(cfg.milestone, cfg.name, info.token);
+    }
+    grid.appendChild(card);
+  });
+}
+
+// ── เปิดกล่อง ──
+function startLootOpen(milestone, name, token) {
+  if (lbOpening) return;
+  lbOpening = true;
+
+  document.getElementById('lb-spin-state').style.display = 'block';
+  document.getElementById('lb-result-state').classList.remove('show');
+  document.getElementById('lb-popup-title').textContent  = `กำลังเปิด ${name}...`;
+  document.getElementById('lb-overlay').classList.add('show');
+
+  callGAS('openLootBox', { token })
+    .then(result => {
+      setTimeout(() => {
+        if (!result.success) {
+          closeLootPopup();
+          showToast('❌ ' + (result.message || 'เกิดข้อผิดพลาด'), 'error');
+          lbOpening = false;
+          return;
+        }
+        document.getElementById('lb-spin-state').style.display = 'none';
+        document.getElementById('lb-result-icon').innerHTML    = getLootIcon(result.discount_amount);
+        document.getElementById('lb-result-name').textContent  = result.prize_name;
+        document.getElementById('lb-result-amount').textContent = result.discount_amount;
+        document.getElementById('lb-result-state').classList.add('show');
+
+        // update card
+        const card = document.getElementById('lb-card-' + milestone);
+        if (card) {
+          card.classList.add('used');
+          card.querySelector('.lb-desc').textContent = 'เปิดแล้ว';
+          card.onclick = null;
+        }
+        const cur = Number(document.getElementById('lb-count').textContent) || 0;
+        document.getElementById('lb-count').textContent = Math.max(0, cur - 1);
+
+        spawnConfetti();
+        lbOpening = false;
+      }, 2000);
+    })
+    .catch(() => {
+      closeLootPopup();
+      showToast('❌ เกิดข้อผิดพลาด', 'error');
+      lbOpening = false;
+    });
+}
+
+function getLootIcon(amount) {
+  const big    = amount >= 30;
+  const medium = amount >= 15;
+  const c1 = big ? '#FFD700' : medium ? '#FACC15' : '#D4A017';
+  const c2 = big ? '#FF8C00' : medium ? '#D97706' : '#92400E';
+  const c3 = big ? '#FFF9C4' : medium ? '#FEF08A' : '#FDE68A';
+  const glow = big ? '#FFD700' : medium ? '#FACC15' : '#D4A017';
+  const sz = 88;
+  const uid = 'coin-' + Math.random().toString(36).substr(2, 9);
+  return `<svg width="${sz}" height="${sz}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="${uid}-coin" cx="35%" cy="28%" r="65%">
+        <stop offset="0%" stop-color="${c3}"/>
+        <stop offset="55%" stop-color="${c1}"/>
+        <stop offset="100%" stop-color="${c2}"/>
+      </radialGradient>
+      <radialGradient id="${uid}-glow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="${glow}" stop-opacity="0.6"/>
+        <stop offset="100%" stop-color="${glow}" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <circle cx="50" cy="50" r="46" fill="url(#${uid}-glow)"/>
+    <ellipse cx="50" cy="92" rx="26" ry="7" fill="rgba(0,0,0,0.35)"/>
+    <circle cx="50" cy="48" r="42" fill="${c2}"/>
+    <circle cx="50" cy="48" r="34" fill="url(#${uid}-coin)"/>
+    <circle cx="50" cy="48" r="32" fill="none" stroke="${c3}" stroke-width="2" opacity="0.7"/>
+    <ellipse cx="42" cy="28" rx="18" ry="8" fill="white" opacity="0.35"/>
+    <text x="50" y="58" text-anchor="middle" font-size="34" font-weight="900" font-family="Arial Black,Arial" fill="${c2}" stroke="${c3}" stroke-width="1.4">฿</text>
+  </svg>`;
+}
+
+function closeLootPopup() {
+  document.getElementById('lb-overlay').classList.remove('show');
+  document.getElementById('lb-confetti').classList.remove('show');
+  document.getElementById('lb-confetti').innerHTML = '';
+  lbOpening = false;
+}
+
+function spawnConfetti() {
+  const wrap   = document.getElementById('lb-confetti');
+  const colors = ['#F59E0B','#14B8A6','#8B5CF6','#EF4444','#10B981','#F472B6'];
+  wrap.innerHTML = '';
+  wrap.classList.add('show');
+  for (let i = 0; i < 60; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'lb-dot';
+    dot.style.left              = Math.random() * 100 + 'vw';
+    dot.style.background        = colors[Math.floor(Math.random() * colors.length)];
+    dot.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
+    dot.style.animationDelay    = (Math.random() * 0.8) + 's';
+    dot.style.width  = (Math.random() * 8 + 4) + 'px';
+    dot.style.height = (Math.random() * 8 + 4) + 'px';
+    wrap.appendChild(dot);
+  }
+  setTimeout(() => wrap.classList.remove('show'), 4000);
+}
+
+// ============================================================
+//  START
+// ============================================================
+init();
+</script>
+</body>
+</html>
   --out: 6px 6px 14px var(--sd), -6px -6px 14px var(--sl);
   --in:  inset 4px 4px 8px var(--sd), inset -4px -4px 8px var(--sl);
 }
