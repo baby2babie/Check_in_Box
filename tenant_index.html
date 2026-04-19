@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>หอพัก — สำหรับผู้เช่า</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { background: #E8EDF2; font-family: 'Sarabun', sans-serif; overflow-x: hidden; }
+:root {
+  --bg: #E8EDF2; --sd: #C5CCD3; --sl: #FFFFFF;
+  --t1: #1F2937; --t2: #6B7280; --t3: #9CA3AF;
+  --teal: #27A896; --teal-d: #1B5E56;
+  --out: 6px 6px 14px var(--sd), -6px -6px 14px var(--sl);
+  --in:  inset 4px 4px 8px var(--sd), inset -4px -4px 8px var(--sl);
+}
+
+/* HEADER */
+.hdr {
+  background: linear-gradient(135deg, #1B5E56, #27A896);
+  padding: 18px 16px 14px; color: #fff;
+  position: sticky; top: 0; z-index: 40;
+}
+.hdr-row { display: flex; align-items: center; gap: 12px; }
+.hdr-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0; overflow: hidden;
+}
+.hdr-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.hdr-name  { font-size: 16px; font-weight: 700; }
+.hdr-room  { font-size: 12px; opacity: 0.8; margin-top: 1px; }
+
+/* PAGES */
+.page { display: none; padding: 14px 14px 88px; }
+.page.active { display: block; }
+
+/* CARDS */
+.card {
+  background: var(--bg); border-radius: 18px;
+  padding: 16px; margin-bottom: 12px; box-shadow: var(--out);
+}
+.card-title { font-size: 13px; color: var(--t3); font-weight: 700; margin-bottom: 8px; }
+.card-val   { font-size: 28px; font-weight: 700; color: var(--t1); }
+.card-val.green { color: #16A34A; }
+.card-val.teal  { color: var(--teal); }
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.row2 .card { margin-bottom: 0; }
+
+/* TIER CARD */
+.tier-card {
+  background: var(--bg); border-radius: 18px; padding: 16px 18px;
+  margin-bottom: 12px; box-shadow: var(--out);
+  display: flex; align-items: center; gap: 14px;
+}
+.tier-badge {
+  width: 60px; height: 60px; border-radius: 16px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  flex-shrink: 0; box-shadow: var(--out);
+}
+.tier-room-no  { font-size: 22px; font-weight: 700; line-height: 1.1; }
+.tier-room-lbl { font-size: 9px; font-weight: 700; opacity: 0.7; }
+.tier-info { flex: 1; min-width: 0; }
+.tier-row  { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.tier-label-el { font-size: 18px; font-weight: 700; color: var(--t1); }
+.tier-dur  { font-size: 12px; color: var(--t3); margin-bottom: 8px; }
+.tier-bar-bg {
+  height: 6px; background: var(--sd); border-radius: 99px;
+  overflow: hidden; box-shadow: var(--in);
+}
+.tier-bar-fill {
+  height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, var(--teal), #1D4ED8);
+  transition: width .6s ease;
+}
+.tier-next { font-size: 11px; color: var(--t2); margin-top: 4px; }
+
+/* BILL */
+.bill-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 11px 0; border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+.bill-row:last-child { border-bottom: none; }
+.bill-badge {
+  font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px;
+}
+
+/* ALERT */
+.alert-banner {
+  background: #FAECE7; border-left: 4px solid #D85A30;
+  border-radius: 14px; padding: 12px 14px; margin-bottom: 12px;
+  color: #993C1D; font-size: 13px; line-height: 1.6; box-shadow: var(--out);
+}
+
+/* CHECKIN */
+.streak-hero {
+  background: linear-gradient(135deg, #1B5E56, #27A896);
+  border-radius: 20px; padding: 24px 20px; margin-bottom: 14px;
+  text-align: center; color: #fff; box-shadow: var(--out);
+}
+.streak-num  { font-size: 56px; font-weight: 700; line-height: 1; }
+.streak-unit { font-size: 16px; opacity: 0.8; margin-top: 4px; }
+.streak-sub  { font-size: 13px; opacity: 0.7; margin-top: 8px; }
+
+.dots-wrap { display: grid; grid-template-columns: repeat(7,1fr); gap: 6px; margin: 12px 0 8px; }
+.dot {
+  aspect-ratio: 1; border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700;
+  background: var(--bg); color: var(--t3); box-shadow: var(--out);
+}
+.dot.filled    { background: var(--teal); color: #fff; box-shadow: none; }
+.dot.milestone { background: #FBBF24; color: #fff; box-shadow: none; }
+.dot-lbl { font-size: 8px; margin-top: 1px; }
+
+.ci-btn {
+  width: 100%; padding: 18px; border: none; border-radius: 99px;
+  background: linear-gradient(135deg, var(--teal), #1D4ED8);
+  color: #fff; font-size: 18px; font-weight: 700;
+  font-family: 'Sarabun', sans-serif; cursor: pointer;
+  box-shadow: var(--out); transition: opacity .2s; margin-bottom: 14px;
+}
+.ci-btn:disabled { opacity: .6; cursor: default; }
+.ci-btn.done { background: linear-gradient(135deg, #6B7280, #9CA3AF); }
+
+.points-row {
+  display: flex; justify-content: space-around;
+  background: var(--bg); border-radius: 16px;
+  padding: 16px; box-shadow: var(--out); margin-bottom: 14px;
+}
+.points-item { text-align: center; }
+.points-num  { font-size: 24px; font-weight: 700; color: var(--teal); }
+.points-lbl  { font-size: 10px; color: var(--t3); margin-top: 3px; }
+
+/* MILESTONE GUIDE */
+.ms-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-top: 4px; }
+.ms-item { text-align: center; padding: 10px 4px; border-radius: 12px; }
+.ms-icon { font-size: 20px; }
+.ms-day  { font-size: 11px; font-weight: 700; margin-top: 4px; }
+.ms-pts  { font-size: 10px; }
+
+/* LOOTBOX */
+.lb-header { text-align: center; margin-bottom: 16px; }
+.lb-title  { font-size: 20px; font-weight: 700; color: var(--t1); }
+.lb-sub    { font-size: 13px; color: var(--t3); margin-top: 4px; }
+
+.lb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.lb-card {
+  background: var(--bg); border-radius: 18px; padding: 18px 12px;
+  text-align: center; box-shadow: var(--out); cursor: pointer;
+  transition: transform .15s; position: relative; overflow: hidden;
+}
+.lb-card:active { transform: scale(.96); }
+.lb-card.locked { opacity: .45; cursor: default; }
+.lb-card.opened { opacity: .55; cursor: default; }
+.lb-card.opened::after {
+  content: '✓ เปิดแล้ว'; position: absolute; bottom: 8px;
+  left: 0; right: 0; font-size: 10px; font-weight: 700; color: #16A34A;
+}
+.lb-card-icon { font-size: 48px; margin-bottom: 8px; }
+.lb-card-name { font-size: 14px; font-weight: 700; color: var(--t1); }
+.lb-card-ms   { font-size: 11px; font-weight: 700; margin-top: 4px; padding: 2px 8px; border-radius: 99px; display: inline-block; }
+.lb-card-desc { font-size: 11px; color: var(--t3); margin-top: 4px; }
+.ms-7  { background:#FEF3C7; color:#92400E; }
+.ms-14 { background:#E0F2FE; color:#0369A1; }
+.ms-21 { background:#F3E8FF; color:#7C3AED; }
+.ms-28 { background:#DCFCE7; color:#15803D; }
+
+/* LOOTBOX POPUP */
+.lb-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75); z-index: 100;
+  align-items: center; justify-content: center;
+}
+.lb-overlay.show { display: flex; }
+.lb-popup {
+  background: #1E293B; border-radius: 24px; padding: 32px 24px;
+  width: calc(100% - 40px); max-width: 360px; text-align: center;
+}
+.lb-spin-wrap {
+  width: 100px; height: 100px; margin: 0 auto 20px;
+  position: relative; display: flex; align-items: center; justify-content: center;
+}
+.lb-spin-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 3px solid rgba(251,191,36,.3); border-top-color: #FBBF24;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.lb-spin-icon { font-size: 52px; animation: pulse .9s ease-in-out infinite alternate; }
+@keyframes pulse { from { transform: scale(.9); } to { transform: scale(1.1); } }
+.lb-spin-text { font-size: 16px; font-weight: 700; color: #F1F5F9; margin-bottom: 6px; }
+.lb-spin-sub  { font-size: 13px; color: #64748B; }
+.lb-result { display: none; }
+.lb-result.show { display: block; }
+.lb-result-icon { font-size: 64px; margin-bottom: 12px; }
+.lb-result-yay  { font-size: 22px; font-weight: 700; color: #F59E0B; margin-bottom: 6px; }
+.lb-result-name { font-size: 14px; color: #94A3B8; margin-bottom: 8px; }
+.lb-result-amt  { font-size: 52px; font-weight: 700; color: #14B8A6; line-height: 1; }
+.lb-result-unit { font-size: 14px; color: #94A3B8; margin: 4px 0 24px; }
+.lb-ok-btn {
+  width: 100%; padding: 16px; border: none; border-radius: 99px;
+  background: linear-gradient(135deg, #14B8A6, #1D4ED8);
+  color: #fff; font-size: 17px; font-weight: 700;
+  font-family: 'Sarabun', sans-serif; cursor: pointer;
+}
+
+/* CONFETTI */
+.lb-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 99; display: none; }
+.lb-confetti.show { display: block; }
+.lb-dot { position: absolute; top: -10px; border-radius: 50%; animation: fall linear forwards; }
+@keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+
+/* CHART */
+.chart-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
+.ctab {
+  flex: 1; padding: 10px; border: none; border-radius: 12px;
+  background: var(--bg); box-shadow: var(--out);
+  font-size: 14px; font-weight: 700; color: var(--t3);
+  cursor: pointer; font-family: 'Sarabun', sans-serif; transition: all .2s;
+}
+.ctab.active { box-shadow: var(--in); color: var(--teal); }
+
+.delta-row  { display: flex; gap: 10px; margin-bottom: 14px; }
+.delta-card { flex: 1; background: var(--bg); border-radius: 14px; padding: 12px 14px; box-shadow: var(--out); text-align: center; }
+.delta-val  { font-size: 20px; font-weight: 700; }
+.delta-lbl  { font-size: 10px; color: var(--t3); margin-top: 2px; }
+
+/* BOTTOM NAV */
+.bnav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg); padding: 8px 0 max(env(safe-area-inset-bottom),8px);
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.08); z-index: 30; display: flex;
+}
+.bnav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  gap: 3px; border: none; background: none; cursor: pointer;
+  padding: 4px 0; font-family: 'Sarabun', sans-serif; color: var(--t3); transition: color .2s;
+}
+.bnav-item.active { color: var(--teal); }
+.bnav-icon  { font-size: 22px; line-height: 1; }
+.bnav-label { font-size: 10px; font-weight: 700; }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(10px);
+  background: #1F2937; color: #fff; padding: 11px 22px; border-radius: 99px;
+  font-size: 14px; font-weight: 700; opacity: 0; transition: all .3s;
+  z-index: 200; white-space: nowrap; pointer-events: none; max-width: 90vw;
+}
+.toast.show  { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.error { background: #DC2626; }
+.toast.ok    { background: #16A34A; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-row">
+    <div class="hdr-avatar" id="hdr-avatar">🏠</div>
+    <div>
+      <div class="hdr-name" id="hdr-name">กำลังโหลด...</div>
+      <div class="hdr-room" id="hdr-room"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: HOME ══ -->
+<div class="page active" id="page-home">
+  <div id="home-alert"></div>
+
+  <div class="tier-card">
+    <div class="tier-badge" id="tier-badge">
+      <span class="tier-room-lbl" id="tier-room-lbl" style="color:#9CA3AF">ห้อง</span>
+      <span class="tier-room-no"  id="tier-room-no"  style="color:#6B7280">-</span>
+    </div>
+    <div class="tier-info">
+      <div class="tier-row">
+        <span id="tier-emoji">🏠</span>
+        <span class="tier-label-el" id="tier-label">-</span>
+      </div>
+      <div class="tier-dur" id="tier-dur">-</div>
+      <div class="tier-bar-bg"><div class="tier-bar-fill" id="tier-bar" style="width:0%"></div></div>
+      <div class="tier-next" id="tier-next"></div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="card">
+      <div class="card-title">🧾 ยอดบิลล่าสุด</div>
+      <div class="card-val" id="h-total">-</div>
+      <div id="h-due" style="font-size:12px;color:var(--t3);margin-top:6px"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🎯 แต้มเดือนนี้</div>
+      <div class="card-val teal" id="h-points">-</div>
+      <div style="font-size:11px;color:var(--t3);margin-top:6px">สูงสุด 100 บาท/เดือน</div>
+    </div>
+  </div>
+  <div class="row2">
+    <div class="card">
+      <div class="card-title">⚡ ค่าไฟเดือนนี้</div>
+      <div class="card-val" id="h-elec">-</div>
+      <div id="h-elec-d" style="font-size:12px;margin-top:6px;font-weight:700"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">💧 ค่าน้ำเดือนนี้</div>
+      <div class="card-val" id="h-water">-</div>
+      <div id="h-water-d" style="font-size:12px;margin-top:6px;font-weight:700"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 บิลย้อนหลัง</div>
+    <div id="h-bills"><div style="text-align:center;color:var(--t3);padding:20px">⏳</div></div>
+  </div>
+</div>
+
+<!-- ══ PAGE: CHECKIN ══ -->
+<div class="page" id="page-checkin">
+  <div class="streak-hero">
+    <div class="streak-num" id="ci-streak">0</div>
+    <div class="streak-unit">วันติดต่อกัน 🔥</div>
+    <div class="streak-sub" id="ci-sub">กดเช็คอินเพื่อสะสมแต้มส่วนลดครับ</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Streak Progress — รอบนี้</div>
+    <div class="dots-wrap" id="ci-dots"></div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t3)">
+      <span id="ci-cycle-lbl">รอบ 1: โบนัส +5 ที่วัน 7</span>
+      <span id="ci-cycle-pos">0/7 วัน</span>
+    </div>
+  </div>
+
+  <button class="ci-btn" id="ci-btn" onclick="doCheckin()">🎯 เช็คอินวันนี้</button>
+
+  <div class="points-row">
+    <div class="points-item">
+      <div class="points-num" id="ci-points">0</div>
+      <div class="points-lbl">แต้มเดือนนี้ (บาท)</div>
+    </div>
+    <div class="points-item">
+      <div class="points-num" id="ci-next-bonus" style="color:#F59E0B">-</div>
+      <div class="points-lbl">อีกกี่วันรับโบนัส</div>
+    </div>
+    <div class="points-item">
+      <div class="points-num" id="ci-boxes" style="color:#8B5CF6">0</div>
+      <div class="points-lbl">กล่องรอเปิด</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🎁 รางวัล Milestone</div>
+    <div class="ms-grid">
+      <div class="ms-item" style="background:#FEF3C7">
+        <div class="ms-icon">🥉</div>
+        <div class="ms-day" style="color:#92400E">7 วัน</div>
+        <div class="ms-pts" style="color:#B45309">+5 บาท</div>
+      </div>
+      <div class="ms-item" style="background:#E0F2FE">
+        <div class="ms-icon">🥈</div>
+        <div class="ms-day" style="color:#0369A1">14 วัน</div>
+        <div class="ms-pts" style="color:#0284C7">+10 บาท</div>
+      </div>
+      <div class="ms-item" style="background:#F3E8FF">
+        <div class="ms-icon">🥇</div>
+        <div class="ms-day" style="color:#7C3AED">21 วัน</div>
+        <div class="ms-pts" style="color:#9333EA">+20 บาท</div>
+      </div>
+      <div class="ms-item" style="background:#DCFCE7">
+        <div class="ms-icon">💎</div>
+        <div class="ms-day" style="color:#15803D">28 วัน</div>
+        <div class="ms-pts" style="color:#16A34A">+35 บาท</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: LOOTBOX ══ -->
+<div class="page" id="page-loot">
+  <div class="lb-header">
+    <div class="lb-title">🎁 กล่องสุ่มของฉัน</div>
+    <div class="lb-sub" id="lb-sub">กำลังโหลด...</div>
+  </div>
+  <div class="lb-grid" id="lb-grid">
+    <div style="grid-column:1/-1;text-align:center;color:var(--t3);padding:40px">⏳</div>
+  </div>
+  <div id="lb-empty" style="display:none;text-align:center;padding:40px 0">
+    <div style="font-size:52px;margin-bottom:14px">📭</div>
+    <div style="font-size:16px;font-weight:700;color:var(--t1);margin-bottom:8px">ยังไม่มีกล่องครับ</div>
+    <div style="font-size:13px;color:var(--t3);line-height:1.7">เช็คอินติดต่อกันครบ 7, 14, 21 หรือ 28 วัน<br>เพื่อรับกล่องสุ่มส่วนลดครับ</div>
+  </div>
+</div>
+
+<!-- ══ PAGE: CHART ══ -->
+<div class="page" id="page-chart">
+  <div class="chart-toggle">
+    <button class="ctab active" id="ctab-elec"  onclick="switchChart('elec')">⚡ ค่าไฟ</button>
+    <button class="ctab"        id="ctab-water" onclick="switchChart('water')">💧 ค่าน้ำ</button>
+  </div>
+  <div class="delta-row">
+    <div class="delta-card"><div class="delta-val" id="ch-cur">-</div><div class="delta-lbl">เดือนนี้ (บาท)</div></div>
+    <div class="delta-card"><div class="delta-val" id="ch-avg">-</div><div class="delta-lbl">เฉลี่ย 5 เดือน</div></div>
+    <div class="delta-card"><div class="delta-val" id="ch-diff">-</div><div class="delta-lbl">% เทียบเฉลี่ย</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title" id="ch-title">⚡ ค่าไฟย้อนหลัง 6 เดือน</div>
+    <div style="position:relative;height:220px"><canvas id="ch-chart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title" id="ch-unit-title">⚡ หน่วยการใช้ไฟ</div>
+    <div style="position:relative;height:180px"><canvas id="ch-unit"></canvas></div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bnav">
+  <button class="bnav-item active" id="nav-home"    onclick="goPage('home')">
+    <span class="bnav-icon">🏠</span><span class="bnav-label">หน้าหลัก</span>
+  </button>
+  <button class="bnav-item" id="nav-checkin" onclick="goPage('checkin')">
+    <span class="bnav-icon">🎯</span><span class="bnav-label">เช็คอิน</span>
+  </button>
+  <button class="bnav-item" id="nav-loot"    onclick="goPage('loot')">
+    <span class="bnav-icon">🎁</span><span class="bnav-label">กล่องสุ่ม</span>
+  </button>
+  <button class="bnav-item" id="nav-chart"   onclick="goPage('chart')">
+    <span class="bnav-icon">📊</span><span class="bnav-label">กราฟ</span>
+  </button>
+</div>
+
+<!-- LOOTBOX POPUP -->
+<div class="lb-overlay" id="lb-overlay">
+  <div class="lb-popup">
+    <div id="lb-spin-state">
+      <div class="lb-spin-wrap">
+        <div class="lb-spin-ring"></div>
+        <div class="lb-spin-icon">🎁</div>
+      </div>
+      <div class="lb-spin-text" id="lb-spin-text">กำลังเปิดกล่อง...</div>
+      <div class="lb-spin-sub">รอสักครู่นะครับ ✨</div>
+    </div>
+    <div class="lb-result" id="lb-result">
+      <div class="lb-result-icon">🎉</div>
+      <div class="lb-result-yay">ยินดีด้วย!</div>
+      <div class="lb-result-name" id="lb-result-name"></div>
+      <div class="lb-result-amt"  id="lb-result-amt">-</div>
+      <div class="lb-result-unit">บาท ลดจากบิลเดือนนี้</div>
+      <button class="lb-ok-btn" onclick="closeLoot()">รับรางวัล 🎊</button>
+    </div>
+  </div>
+</div>
+<div class="lb-confetti" id="lb-confetti"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONFIG ─── แก้ค่าเหล่านี้
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbx57fi00n2RKu7b5jHu67vzUVwrez1cx6RhW0lvvM9cIkt6_amJzMoVJOJvrwD7imHBnA/exec';
+const LIFF_ID = 'YOUR_TENANT_LIFF_ID'; // ← แทนด้วย LIFF ID จริงหลังสร้างใน LINE Developers
+
+// ─── STATE ───
+let room        = '';
+let dashData    = {};
+let ciData      = {};
+let lbBoxes     = {};
+let chartTab    = 'elec';
+let chartMain   = null;
+let chartUnit   = null;
+let lbOpening   = false;
+
+const MILESTONES = [
+  { day:7,  bonus:5,  name:'กล่องทองแดง', ms:'ms-7',  emoji:'🥉' },
+  { day:14, bonus:10, name:'กล่องเงิน',    ms:'ms-14', emoji:'🥈' },
+  { day:21, bonus:20, name:'กล่องทอง',    ms:'ms-21', emoji:'🥇' },
+  { day:28, bonus:35, name:'กล่องเพชร',   ms:'ms-28', emoji:'💎' }
+];
+const TIER_BG = { Member:'#F3F4F6', Silver:'#F3F4F6', Gold:'#FFFBEB', Platinum:'#F3E8FF', Diamond:'#E1F5EE', Legend:'#FEF3C7' };
+const TIER_CL = { Member:'#6B7280', Silver:'#444441', Gold:'#B45309', Platinum:'#7C3AED', Diamond:'#085041', Legend:'#92400E' };
+
+// ─── UTILS ───
+async function gas(action, params={}) {
+  const r = await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action,...params})});
+  return r.json();
+}
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(type?' '+type:'');
+  setTimeout(()=>t.className='toast',3000);
+}
+function fmt(n){ return Number(n).toLocaleString('th-TH'); }
+function thShort(k){
+  if(!k||!k.includes('-'))return'-';
+  const th=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const[y,m]=k.split('-'); return th[Number(m)-1]+' '+(Number(y)+543);
+}
+function thLong(k){
+  if(!k||!k.includes('-'))return'-';
+  const th=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const[y,m]=k.split('-'); return th[Number(m)-1]+' '+(Number(y)+543);
+}
+function avg5(arr){
+  const s=(arr||[]).slice(0,-1).filter(v=>v!==null&&v!==undefined);
+  return s.length?Math.round(s.reduce((a,b)=>a+b,0)/s.length):0;
+}
+function setDelta(id,pct){
+  const el=document.getElementById(id); if(!el)return;
+  if(pct>15){el.textContent='▲ '+pct+'%';el.style.color='#DC2626';}
+  else if(pct<-5){el.textContent='▼ '+Math.abs(pct)+'%';el.style.color='#16A34A';}
+  else{el.textContent='ปกติ';el.style.color='#9CA3AF';}
+}
+
+// ─── PAGE NAV ───
+function goPage(p){
+  ['home','checkin','loot','chart'].forEach(x=>{
+    document.getElementById('page-'+x).classList.toggle('active',x===p);
+    document.getElementById('nav-'+x)?.classList.toggle('active',x===p);
+  });
+  window.scrollTo(0,0);
+  if(p==='checkin') renderCheckin();
+  if(p==='loot')    loadLoot();
+  if(p==='chart')   renderChart();
+}
+
+// ─── INIT ───
+async function init(){
+  try {
+    await liff.init({liffId:LIFF_ID,withLoginOnExternalBrowser:true});
+    if(!liff.isLoggedIn()){liff.login({redirectUri:location.href});return;}
+    const profile = await liff.getProfile();
+    document.getElementById('hdr-avatar').innerHTML=`<img src="${profile.pictureUrl}" alt="">`;
+    document.getElementById('hdr-name').textContent = profile.displayName;
+
+    // ดึง room จาก LINE userId
+    const ur = await gas('getUserByLineId',{userId:profile.userId});
+    if(!ur.success||ur.role!=='TENANT'){
+      document.getElementById('hdr-room').textContent='ไม่พบข้อมูลผู้เช่าครับ';
+      toast('⚠️ ไม่พบข้อมูลผู้เช่า','error'); return;
+    }
+    room = ur.room;
+    document.getElementById('hdr-room').textContent='ห้อง '+room;
+
+    // โหลดข้อมูลพร้อมกัน
+    const [d, ci] = await Promise.all([
+      gas('getTenantDashboard',{room}),
+      gas('getCheckinData',{room})
+    ]);
+    if(d.success)  { dashData=d;  renderHome(); }
+    if(ci.success) { ciData=ci;   renderCheckin(); }
+
+  } catch(e) {
+    document.getElementById('hdr-name').textContent='เกิดข้อผิดพลาด';
+    toast('❌ '+e.message,'error');
+  }
+}
+
+// ─── HOME ───
+function renderHome(){
+  const d=dashData;
+  const bg=TIER_BG[d.tierLabel]||'#F3F4F6';
+  const cl=TIER_CL[d.tierLabel]||'#6B7280';
+  const badge=document.getElementById('tier-badge');
+  badge.style.background=bg;
+  document.getElementById('tier-room-lbl').style.color=cl;
+  document.getElementById('tier-room-no').style.color=cl;
+  document.getElementById('tier-room-no').textContent=room;
+  document.getElementById('tier-emoji').textContent=d.tierEmoji||'🏠';
+  document.getElementById('tier-label').textContent=d.tierLabel||'Member';
+  document.getElementById('tier-dur').textContent=d.dur||'';
+  document.getElementById('tier-bar').style.width=(d.tierProgress||0)+'%';
+  document.getElementById('tier-next').textContent=d.tierNextLabel
+    ?`อีก ${d.tierMonthsLeft} เดือน → ${d.tierNextEmoji} ${d.tierNextLabel}`
+    :'🏆 ระดับสูงสุดแล้ว!';
+
+  const li=(d.electric||[]).map((v,i)=>v!==null?i:-1).filter(i=>i>=0).pop()??-1;
+  const elec=li>=0?d.electric[li]||0:0;
+  const water=li>=0?d.water[li]||0:0;
+  const total=d.bills?.[0]?.total||0;
+  const pts=d.monthPoints||0;
+  const ae=avg5(d.electric), aw=avg5(d.water);
+  const de=ae?Math.round(((elec-ae)/ae)*100):0;
+  const dw=aw?Math.round(((water-aw)/aw)*100):0;
+
+  document.getElementById('h-total').textContent='฿ '+fmt(total);
+  document.getElementById('h-points').textContent=pts;
+  document.getElementById('h-elec').textContent='฿ '+fmt(elec);
+  document.getElementById('h-water').textContent='฿ '+fmt(water);
+  setDelta('h-elec-d',de); setDelta('h-water-d',dw);
+
+  const lm=(d.months||[])[li]||'';
+  if(lm){
+    const[y,m]=lm.split('-');
+    const due=Number(m)===12?(Number(y)+1)+'-01':y+'-'+String(Number(m)+1).padStart(2,'0');
+    document.getElementById('h-due').textContent='ครบกำหนด 5 '+thShort(due);
+  }
+  if(de>20) document.getElementById('home-alert').innerHTML=
+    `<div class="alert-banner">⚠️ ค่าไฟเดือนนี้สูงกว่าค่าเฉลี่ย ${de}% — ลองตรวจสอบเครื่องใช้ไฟฟ้าในห้องครับ</div>`;
+
+  document.getElementById('h-bills').innerHTML=(d.bills||[]).length
+    ?d.bills.map(b=>{
+      const paid=String(b.paid).trim()==='PAID';
+      return`<div class="bill-row">
+        <span style="font-size:14px;color:var(--t1)">${thLong(b.month)}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:14px;font-weight:700">฿ ${fmt(b.total)}</span>
+          <span class="bill-badge" style="background:${paid?'#D1FAE5':'#FEF3C7'};color:${paid?'#065F46':'#92400E'}">${paid?'ชำระแล้ว':'รอชำระ'}</span>
+        </div></div>`;
+    }).join('')
+    :'<div style="text-align:center;color:var(--t3);padding:20px">ไม่พบข้อมูลบิล</div>';
+}
+
+// ─── CHECKIN ───
+function renderCheckin(){
+  if(!ciData.success)return;
+  const streak=ciData.streak||0;
+  const points=ciData.points||0;
+  const done=ciData.checkedToday||false;
+
+  document.getElementById('ci-streak').textContent=streak;
+  const nextM=MILESTONES.find(m=>m.day>streak);
+  const dl=nextM?nextM.day-streak:0;
+  document.getElementById('ci-sub').textContent=done
+    ?'เช็คอินแล้ววันนี้ครับ 👍'
+    :nextM?`อีก ${dl} วัน รับโบนัส +${nextM.bonus} บาท`:'ยอดเยี่ยม! ครบทุก milestone แล้ว 🏆';
+
+  const cyclePos=streak===0?0:(streak%7||7);
+  const cycleNum=streak===0?0:Math.floor((streak-1)/7);
+  const bonus=MILESTONES[Math.min(cycleNum,3)]?.bonus||5;
+  const dots=document.getElementById('ci-dots');
+  dots.innerHTML='';
+  for(let i=1;i<=7;i++){
+    const f=i<=cyclePos, isM=i===7;
+    const div=document.createElement('div');
+    div.className='dot'+(f?(isM?' milestone':' filled'):'');
+    div.innerHTML=`<span>${f?'✓':i}</span><span class="dot-lbl">${isM?'+'+(1+bonus):'+1'}</span>`;
+    dots.appendChild(div);
+  }
+  const labels=['7 วัน +5฿','14 วัน +10฿','21 วัน +20฿','28 วัน +35฿'];
+  document.getElementById('ci-cycle-lbl').textContent='รอบ: '+(labels[Math.min(cycleNum,3)]||labels[0]);
+  document.getElementById('ci-cycle-pos').textContent=cyclePos+'/7 วัน';
+
+  const btn=document.getElementById('ci-btn');
+  btn.textContent=done?'✅ เช็คอินแล้ววันนี้':'🎯 เช็คอินวันนี้';
+  btn.className='ci-btn'+(done?' done':'');
+  btn.disabled=done;
+  document.getElementById('ci-points').textContent=points;
+  document.getElementById('ci-next-bonus').textContent=nextM?dl+' วัน':'-';
+
+  // box count
+  const bc=Object.values(lbBoxes).filter(b=>b.token&&!b.opened).length;
+  document.getElementById('ci-boxes').textContent=bc;
+}
+
+async function doCheckin(){
+  const btn=document.getElementById('ci-btn');
+  btn.disabled=true; btn.textContent='⏳ กำลังเช็คอิน...';
+  try {
+    const res=await gas('checkinByRoom',{room});
+    if(res.success){
+      ciData={...ciData,...res};
+      renderCheckin();
+      toast(`✅ เช็คอิน +${res.earned} บาท`+(res.bonus>0?` + โบนัส +${res.bonus} บาท`:''),'ok');
+      if(res.newBox) await loadLoot(true);
+      document.getElementById('h-points').textContent=res.points||0;
+    } else {
+      toast('❌ '+(res.message||'เกิดข้อผิดพลาด'),'error');
+      btn.disabled=false; btn.textContent='🎯 เช็คอินวันนี้';
+    }
+  } catch(e){
+    toast('❌ '+e.message,'error');
+    btn.disabled=false; btn.textContent='🎯 เช็คอินวันนี้';
+  }
+}
+
+// ─── LOOTBOX ───
+async function loadLoot(silent=false){
+  if(!silent){
+    document.getElementById('lb-grid').innerHTML=
+      '<div style="grid-column:1/-1;text-align:center;color:var(--t3);padding:40px">⏳</div>';
+  }
+  try {
+    const res=await gas('getLootBoxes',{room});
+    lbBoxes=res.boxes||{};
+    const count=Object.values(lbBoxes).filter(b=>b.token&&!b.opened).length;
+    document.getElementById('ci-boxes').textContent=count;
+    document.getElementById('lb-sub').textContent=count>0?`มี ${count} กล่องรอเปิดอยู่ครับ`:'ยังไม่มีกล่องที่รอเปิด';
+    renderLootGrid();
+  } catch(e){ if(!silent)toast('❌ โหลดไม่ได้','error'); }
+}
+
+function renderLootGrid(){
+  const grid=document.getElementById('lb-grid');
+  const empty=document.getElementById('lb-empty');
+  const hasAny=Object.values(lbBoxes).some(b=>b.token);
+  if(!hasAny){ grid.style.display='none'; empty.style.display='block'; return; }
+  grid.style.display='grid'; empty.style.display='none';
+  grid.innerHTML=MILESTONES.map(m=>{
+    const info=lbBoxes[m.day]||{};
+    const has=info.token&&!info.opened;
+    const opened=info.token&&info.opened;
+    const locked=!info.token;
+    return`<div class="lb-card${opened?' opened':''}${locked?' locked':''}" ${has?`onclick="openLoot(${m.day},'${info.token}','${m.name}')"`:''}">
+      <div class="lb-card-icon">${m.emoji}</div>
+      <div class="lb-card-name">${m.name}</div>
+      <div class="lb-card-ms ${m.ms}">ครบ ${m.day} วัน</div>
+      <div class="lb-card-desc">${opened?'เปิดแล้วครับ':locked?'ยังไม่ถึงรอบ':'กดเปิดได้เลย!'}</div>
+    </div>`;
+  }).join('');
+}
+
+function openLoot(milestone,token,name){
+  if(lbOpening||!token)return;
+  lbOpening=true;
+  document.getElementById('lb-spin-state').style.display='block';
+  document.getElementById('lb-result').classList.remove('show');
+  document.getElementById('lb-spin-text').textContent='กำลังเปิด '+name+'...';
+  document.getElementById('lb-overlay').classList.add('show');
+  gas('openLootBox',{token}).then(res=>{
+    setTimeout(()=>{
+      if(!res.success){
+        closeLoot(); toast('❌ '+(res.message||'เกิดข้อผิดพลาด'),'error'); return;
+      }
+      document.getElementById('lb-spin-state').style.display='none';
+      document.getElementById('lb-result-name').textContent=res.prize_name;
+      document.getElementById('lb-result-amt').textContent=res.discount_amount;
+      document.getElementById('lb-result').classList.add('show');
+      if(lbBoxes[milestone]) lbBoxes[milestone].opened=true;
+      renderLootGrid();
+      spawnConfetti();
+      lbOpening=false;
+    },2000);
+  }).catch(()=>{ closeLoot(); toast('❌ เกิดข้อผิดพลาด','error'); lbOpening=false; });
+}
+
+function closeLoot(){
+  document.getElementById('lb-overlay').classList.remove('show');
+  document.getElementById('lb-confetti').classList.remove('show');
+  document.getElementById('lb-confetti').innerHTML='';
+  lbOpening=false;
+}
+
+function spawnConfetti(){
+  const wrap=document.getElementById('lb-confetti');
+  const colors=['#F59E0B','#14B8A6','#8B5CF6','#EF4444','#10B981','#F472B6'];
+  wrap.innerHTML=''; wrap.classList.add('show');
+  for(let i=0;i<60;i++){
+    const d=document.createElement('div');
+    d.className='lb-dot';
+    d.style.cssText=`left:${Math.random()*100}vw;background:${colors[~~(Math.random()*colors.length)]};animation-duration:${Math.random()*2+1.5}s;animation-delay:${Math.random()*.8}s;width:${Math.random()*8+4}px;height:${Math.random()*8+4}px`;
+    wrap.appendChild(d);
+  }
+  setTimeout(()=>wrap.classList.remove('show'),4500);
+}
+
+// ─── CHART ───
+function switchChart(tab){
+  chartTab=tab;
+  document.getElementById('ctab-elec').classList.toggle('active',tab==='elec');
+  document.getElementById('ctab-water').classList.toggle('active',tab==='water');
+  renderChart();
+}
+
+function renderChart(){
+  if(!dashData.months)return;
+  const isE=chartTab==='elec';
+  const rb=isE?dashData.electric:dashData.water;
+  const ru=isE?dashData.unitElectric:dashData.unitWater;
+  const filtered=dashData.months.map((m,i)=>({m,b:rb?.[i],u:ru?.[i]})).filter(x=>x.b!==null&&x.b!==undefined);
+  if(!filtered.length)return;
+  const labels=filtered.map(x=>thShort(x.m));
+  const baht=filtered.map(x=>x.b||0);
+  const unit=filtered.map(x=>x.u||0);
+  const cur=baht[baht.length-1]||0;
+  const av=avg5(rb);
+  const diff=av?Math.round(((cur-av)/av)*100):0;
+  document.getElementById('ch-cur').textContent='฿'+fmt(cur);
+  document.getElementById('ch-avg').textContent='฿'+fmt(av);
+  const de=document.getElementById('ch-diff');
+  de.textContent=(diff>=0?'+':'')+diff+'%';
+  de.style.color=diff>15?'#DC2626':diff<-5?'#16A34A':'#9CA3AF';
+  document.getElementById('ch-title').textContent=isE?'⚡ ค่าไฟย้อนหลัง 6 เดือน':'💧 ค่าน้ำย้อนหลัง 6 เดือน';
+  document.getElementById('ch-unit-title').textContent=isE?'⚡ หน่วยการใช้ไฟ':'💧 หน่วยการใช้น้ำ';
+  const color=isE?'#1D4ED8':'#27A896';
+  if(chartMain)chartMain.destroy();
+  chartMain=new Chart(document.getElementById('ch-chart'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:isE?'ค่าไฟ (฿)':'ค่าน้ำ (฿)',data:baht,
+       backgroundColor:baht.map((v,i)=>i===baht.length-1&&av&&v>av*1.2?'#D85A3099':color+'99'),
+       borderColor:baht.map((v,i)=>i===baht.length-1&&av&&v>av*1.2?'#993C1D':color),
+       borderWidth:1.5,borderRadius:6},
+      ...(av?[{type:'line',label:'ค่าเฉลี่ย',data:Array(labels.length).fill(av),
+        borderColor:'#94A3B8',borderWidth:1.5,borderDash:[5,4],pointRadius:0}]:[])
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'฿'+ctx.parsed.y.toLocaleString('th-TH')}}},
+      scales:{x:{grid:{display:false},ticks:{font:{family:'Sarabun',size:12},color:'#888780'}},
+              y:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{font:{family:'Sarabun',size:11},color:'#888780',callback:v=>'฿'+v.toLocaleString('th-TH')}}}}
+  });
+  if(chartUnit)chartUnit.destroy();
+  chartUnit=new Chart(document.getElementById('ch-unit'),{
+    type:'line',
+    data:{labels,datasets:[{label:isE?'หน่วยไฟ':'หน่วยน้ำ',data:unit,
+      borderColor:color,backgroundColor:color+'22',borderWidth:2,pointRadius:4,tension:.3,fill:true}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y+' หน่วย'}}},
+      scales:{x:{grid:{display:false},ticks:{font:{family:'Sarabun',size:12},color:'#888780'}},
+              y:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{font:{family:'Sarabun',size:11},color:'#888780'}}}}
+  });
+}
+
+init();
+</script>
+</body>
+</html>
