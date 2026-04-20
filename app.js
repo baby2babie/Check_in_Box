@@ -6,10 +6,10 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbx57fi00n2RKu7b5jHu67vz
 const LIFF_ID = '2004478373-pUgVSZTj';
 
 const LB_CONFIG = [
-  { milestone: 7,  name: 'กล่องเงิน',     desc: 'ส่วนลด 5–10 บาท',  theme: 'gold',   ms: 'ms-gold'   },
-  { milestone: 14, name: 'กล่องทอง',      desc: 'ส่วนลด 5–20 บาท', theme: 'teal',   ms: 'ms-teal'   },
-  { milestone: 21, name: 'กล่องแพลตินัม', desc: 'ส่วนลด 5–25 บาท', theme: 'purple', ms: 'ms-purple' },
-  { milestone: 28, name: 'กล่องตำนาน',    desc: 'ส่วนลด 5–45 บาท', theme: 'red',    ms: 'ms-red'    },
+  { milestone: 7,  name: 'กล่องเงิน',     desc: 'ลุ้นรับส่วนลดสูงสุด 10.-',  theme: 'gold',   ms: 'ms-gold'   },
+  { milestone: 14, name: 'กล่องทอง',      desc: 'ลุ้นรับส่วนลดสูงสุด 20.-', theme: 'teal',   ms: 'ms-teal'   },
+  { milestone: 21, name: 'กล่องแพลตินัม', desc: 'ลุ้นรับส่วนลดสูงสุด 25.-', theme: 'purple', ms: 'ms-purple' },
+  { milestone: 28, name: 'กล่องตำนาน',    desc: 'ลุ้นรับส่วนลดสูงสุด 45.-', theme: 'red',    ms: 'ms-red'    },
 ];
 
 let lbOpening   = false;
