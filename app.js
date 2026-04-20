@@ -47,13 +47,10 @@ async function initLiff() {
   try {
     await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true });
     liffReady = true;
-    
     if (!liff.isLoggedIn()) {
-      // บังคับกระโดดไปหน้า Login ทันที (ทั้ง PC และมือถือ)
       liff.login({ redirectUri: location.href });
-      return; 
+      return;
     }
-    
     liffProfile = await liff.getProfile();
   } catch (e) {
     console.warn('LIFF init failed:', e);
