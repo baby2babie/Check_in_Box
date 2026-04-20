@@ -86,3 +86,18 @@ body {
   color: white; font-size: 18px; font-weight: 700;
   box-shadow: 0 8px 20px rgba(20, 184, 166, 0.3);
 }
+
+/* --- ส่วนที่เพิ่มใหม่สำหรับแสงกะพริบ (ใช้ชุดเดียวพอครับ) --- */
+@keyframes glow-box {
+  0%   { border-color: var(--lb-border); box-shadow: 0 0 5px rgba(245, 158, 11, 0.2); }
+  50%  { border-color: var(--lb-gold);   box-shadow: 0 0 20px rgba(245, 158, 11, 0.8); } /* เพิ่มความสว่างเป็น 0.8 จะได้เห็นชัดๆ ในมือถือ */
+  100% { border-color: var(--lb-border); box-shadow: 0 0 5px rgba(245, 158, 11, 0.2); }
+}
+
+/* คลาสพิเศษที่จะถูกใส่ผ่าน JS เมื่อกล่องพร้อมเปิด */
+.can-open {
+  animation: glow-box 2s infinite ease-in-out !important;
+  border-width: 2px !important; /* ทำให้ขอบหนาขึ้นตอนกะพริบ จะได้ดูพรีเมียม */
+  z-index: 10; /* ดันกล่องที่กะพริบให้ลอยขึ้นมาเด่นๆ */
+}
+/* ---------------------------------- */
