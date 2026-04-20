@@ -218,61 +218,65 @@ function closeLootPopup() {
 // ============================================================
 // แก้ไขในไฟล์ app.js แทนที่ฟังก์ชัน getLootIcon เดิม
 function getLootIcon(amount) {
-  // เช็คว่าเป็นรางวัลใหญ่ (25 หรือ 45 บาท)
   const isBigWin = amount >= 25;
   const isLegend = amount >= 45;
+  const uid = 'premium-coin-' + Math.random().toString(36).substr(2, 9);
   
-  // สีทองระดับพรีเมียม
-  const goldLight = isLegend ? '#FFF9C4' : '#FEF08A';
-  const goldMain  = isLegend ? '#FBBF24' : '#FACC15';
-  const goldDark  = isLegend ? '#B45309' : '#92400E';
-  
-  // ตั้งค่าออร่า (ถ้าเป็นรางวัลใหญ่ จะฟุ้งกว้างกว่าปกติ)
-  const auraSize = isLegend ? "50" : isBigWin ? "45" : "35";
-  const auraOpacity = isLegend ? "0.8" : isBigWin ? "0.6" : "0.3";
+  // สีทองหลายเฉดเพื่อมิติที่ลึกขึ้น
+  const goldWhite = '#FFFDE7';
+  const goldBright = '#FDE68A';
+  const goldMain = '#FACC15';
+  const goldDeep = '#CA8A04';
+  const goldShadow = '#78350F';
 
-  const uid = 'coin-' + Math.random().toString(36).substr(2, 9);
+  // ถ้าเป็นรางวัลใหญ่ ออร่าจะสว่างและกว้างกว่า
+  const auraOpacity = isLegend ? '0.6' : isBigWin ? '0.4' : '0.15';
+  const beamOpacity = isLegend ? '0.4' : isBigWin ? '0.2' : '0';
 
   return `
-  <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="margin-left: -10px; margin-top: -10px;">
+  <svg width="140" height="140" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="margin: -10px;">
     <defs>
-      <radialGradient id="${uid}-aura-wide" cx="50%" cy="50%" r="50%">
+      <radialGradient id="${uid}-glow" cx="50%" cy="50%" r="50%">
         <stop offset="0%"   stop-color="${goldMain}" stop-opacity="${auraOpacity}"/>
         <stop offset="100%" stop-color="${goldMain}" stop-opacity="0"/>
       </radialGradient>
-      
-      <radialGradient id="${uid}-aura-core" cx="50%" cy="50%" r="50%">
-        <stop offset="0%"   stop-color="${goldLight}" stop-opacity="${isBigWin ? '0.9' : '0'}"/>
-        <stop offset="70%"  stop-color="${goldMain}"  stop-opacity="0"/>
-      </radialGradient>
 
-      <radialGradient id="${uid}-coin-base" cx="35%" cy="28%" r="65%">
-        <stop offset="0%"   stop-color="${goldLight}"/>
-        <stop offset="50%"  stop-color="${goldMain}"/>
-        <stop offset="100%" stop-color="${goldDark}"/>
-      </radialGradient>
-      
-      <linearGradient id="${uid}-highlight" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%"   stop-color="white" stop-opacity="0.6"/>
-        <stop offset="40%"  stop-color="white" stop-opacity="0"/>
-        <stop offset="100%" stop-color="white" stop-opacity="0.4"/>
+      <linearGradient id="${uid}-shine" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="white" stop-opacity="0.8"/>
+        <stop offset="25%" stop-color="white" stop-opacity="0"/>
+        <stop offset="50%" stop-color="white" stop-opacity="0.2"/>
+        <stop offset="100%" stop-color="white" stop-opacity="0.5"/>
       </linearGradient>
+
+      <radialGradient id="${uid}-body" cx="40%" cy="30%" r="70%">
+        <stop offset="0%"   stop-color="${goldBright}"/>
+        <stop offset="60%"  stop-color="${goldMain}"/>
+        <stop offset="100%" stop-color="${goldDeep}"/>
+      </radialGradient>
     </defs>
+
+    <g transform="translate(60,60)" opacity="${beamOpacity}">
+      ${[0, 45, 90, 135, 180, 225, 270, 315].map(deg => `
+        <rect x="-1" y="-60" width="2" height="120" fill="${goldMain}" transform="rotate(${deg})" opacity="0.3"/>
+      `).join('')}
+    </g>
+
+    <circle cx="60" cy="60" r="55" fill="url(#${uid}-glow)"/>
+
+    <circle cx="60" cy="62" r="38" fill="${goldShadow}"/>
     
-    <circle cx="60" cy="60" r="${auraSize}" fill="url(#${uid}-aura-wide)"/>
-    <circle cx="60" cy="60" r="45" fill="url(#${uid}-aura-core)"/>
+    <circle cx="60" cy="60" r="38" fill="url(#${uid}-body)"/>
     
-    <circle cx="60" cy="58" r="38" fill="${goldDark}"/>
-    <circle cx="60" cy="58" r="36" fill="url(#${uid}-coin-base)"/>
-    <circle cx="60" cy="58" r="36" fill="url(#${uid}-highlight)"/>
+    <circle cx="60" cy="60" r="33" fill="none" stroke="${goldShadow}" stroke-width="0.5" opacity="0.3"/>
     
-    <text x="60" y="70"
-      text-anchor="middle" font-size="34" font-weight="900"
-      font-family="Arial Black, sans-serif"
-      fill="${goldDark}" opacity="0.8">฿</text>
+    <circle cx="60" cy="60" r="38" fill="url(#${uid}-shine)"/>
+
+    <text x="60" y="73" text-anchor="middle" font-size="40" font-weight="900" 
+          font-family="Arial Black" fill="${goldShadow}" opacity="0.7">฿</text>
+    <text x="60" y="71" text-anchor="middle" font-size="40" font-weight="900" 
+          font-family="Arial Black" fill="${goldWhite}">฿</text>
   </svg>`;
 }
-
 // ============================================================
 //  CONFETTI
 // ============================================================
