@@ -47,14 +47,22 @@ async function initLiff() {
   try {
     await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true });
     liffReady = true;
+
+    // เช็คว่าถ้าไม่ได้ Login และอยู่ใน LINE (หรือต้องการบังคับ Login)
     if (!liff.isLoggedIn()) {
-      liff.login({ redirectUri: location.href });
-      return;
+      // ถ้าเปิดบน PC (External Browser) เราอาจจะไม่บังคับ Login ทันทีเพื่อไม่ให้หน้าขาว
+      if (liff.isInClient()) {
+         liff.login({ redirectUri: location.href });
+         return;
+      } else {
+         console.log("เปิดบน PC: ข้ามการบังคับ Login เพื่อให้แสดงผล Skeleton ได้");
+      }
+    } else {
+      liffProfile = await liff.getProfile();
     }
-    liffProfile = await liff.getProfile();
   } catch (e) {
     console.warn('LIFF init failed:', e);
-    showError('❌ LIFF เริ่มต้นไม่ได้ กรุณาเปิดผ่าน LINE ครับ');
+    // ไม่ต้อง showError ทันที เพื่อให้ระบบยังไปรัน loadLootBoxByRoom ได้ถ้ามีเลขห้องใน URL
   }
 }
 
