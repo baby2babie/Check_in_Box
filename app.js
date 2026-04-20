@@ -217,37 +217,62 @@ function closeLootPopup() {
 //  LOOT ICON (coin svg)
 // ============================================================
 function getLootIcon(amount) {
-  const big    = amount >= 30;
-  const medium = amount >= 15;
-  const c1   = big ? '#FFD700' : medium ? '#FACC15' : '#D4A017';
-  const c2   = big ? '#FF8C00' : medium ? '#D97706' : '#92400E';
-  const c3   = big ? '#FFF9C4' : medium ? '#FEF08A' : '#FDE68A';
-  const glow = big ? '#FFD700' : medium ? '#FACC15' : '#D4A017';
-  const uid  = 'coin-' + Math.random().toString(36).substr(2, 9);
+  // กำหนดระดับความพรีเมียมตามจำนวนเงิน
+  const isLegend = amount >= 40; // 40 บาทขึ้นไป (กล่องตำนาน)
+  const isHigh   = amount >= 25; // 25 บาทขึ้นไป (กล่องแพลตินัม)
+  
+  // โทนสีทองพรีเมียม (Gold Tones)
+  const goldLight = isLegend ? '#FFF9C4' : '#FEF08A'; // สีเหลืองนวล (แสงสะท้อน)
+  const goldMain  = isLegend ? '#FBBF24' : '#FACC15'; // สีทองหลัก
+  const goldDark  = isLegend ? '#B45309' : '#92400E'; // สีน้ำตาลทอง (เงา)
+  
+  // สีแสงเรือง (Glow Color)
+  const glowColor = isLegend ? '#FBBF24' : '#F59E0B';
+  const glowOpacity = isLegend ? '0.7' : '0.5';
+
+  const uid = 'coin-' + Math.random().toString(36).substr(2, 9);
 
   return `
-  <svg width="88" height="88" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <radialGradient id="${uid}-coin" cx="35%" cy="28%" r="65%">
-        <stop offset="0%"   stop-color="${c3}"/>
-        <stop offset="55%"  stop-color="${c1}"/>
-        <stop offset="100%" stop-color="${c2}"/>
-      </radialGradient>
       <radialGradient id="${uid}-glow" cx="50%" cy="50%" r="50%">
-        <stop offset="0%"   stop-color="${glow}" stop-opacity="0.6"/>
-        <stop offset="100%" stop-color="${glow}" stop-opacity="0"/>
+        <stop offset="0%"   stop-color="${glowColor}" stop-opacity="${glowOpacity}"/>
+        <stop offset="100%" stop-color="${glowColor}" stop-opacity="0"/>
       </radialGradient>
+      
+      <radialGradient id="${uid}-coin-base" cx="35%" cy="28%" r="65%">
+        <stop offset="0%"   stop-color="${goldLight}"/>
+        <stop offset="50%"  stop-color="${goldMain}"/>
+        <stop offset="100%" stop-color="${goldDark}"/>
+      </radialGradient>
+      
+      <linearGradient id="${uid}-highlight" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"   stop-color="white" stop-opacity="0.5"/>
+        <stop offset="30%"  stop-color="white" stop-opacity="0"/>
+        <stop offset="70%"  stop-color="white" stop-opacity="0"/>
+        <stop offset="100%" stop-color="white" stop-opacity="0.3"/>
+      </linearGradient>
     </defs>
-    <circle cx="50" cy="50" r="46" fill="url(#${uid}-glow)"/>
-    <ellipse cx="50" cy="92" rx="26" ry="7" fill="rgba(0,0,0,0.35)"/>
-    <circle cx="50" cy="48" r="42" fill="${c2}"/>
-    <circle cx="50" cy="48" r="34" fill="url(#${uid}-coin)"/>
-    <circle cx="50" cy="48" r="32" fill="none" stroke="${c3}" stroke-width="2" opacity="0.7"/>
-    <ellipse cx="42" cy="28" rx="18" ry="8" fill="white" opacity="0.35"/>
-    <text x="50" y="58"
-      text-anchor="middle" font-size="34" font-weight="900"
-      font-family="Arial Black,Arial"
-      fill="${c2}" stroke="${c3}" stroke-width="1.4">฿</text>
+    
+    <circle cx="50" cy="50" r="48" fill="url(#${uid}-glow)"/>
+    
+    <circle cx="50" cy="48" r="42" fill="${goldDark}"/>
+    
+    <circle cx="50" cy="48" r="40" fill="url(#${uid}-coin-base)"/>
+    
+    <circle cx="50" cy="48" r="36" fill="none" stroke="${goldDark}" stroke-width="1" opacity="0.3"/>
+    
+    <circle cx="50" cy="48" r="40" fill="url(#${uid}-highlight)"/>
+    
+    <text x="50" y="60"
+      text-anchor="middle" font-size="38" font-weight="900"
+      font-family="Arial Black,Sarun,sans-serif"
+      fill="${goldDark}" opacity="0.85">฿</text>
+      
+    <text x="50" y="60"
+      text-anchor="middle" font-size="38" font-weight="900"
+      font-family="Arial Black,Sarun,sans-serif"
+      fill="none" stroke="${goldLight}" stroke-width="0.8" opacity="0.5">฿</text>
   </svg>`;
 }
 
