@@ -197,7 +197,7 @@ html, body {
 
 /* คลาสพิเศษที่จะถูกใส่ผ่าน JS เมื่อกล่องพร้อมเปิด */
 .can-open {
-  animation: glow-box 2s infinite ease-in-out !important;
+  animation: glow-box 3s infinite ease-in-out !important;
   border-width: 2px !important; /* ทำให้ขอบหนาขึ้นตอนกะพริบ จะได้ดูพรีเมียม */
   z-index: 10; /* ดันกล่องที่กะพริบให้ลอยขึ้นมาเด่นๆ */
 }
