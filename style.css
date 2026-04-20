@@ -277,3 +277,24 @@ html, body {
   font-size: 17px;
   font-weight: 400;
 }
+/* --- ส่วนที่เพิ่มใหม่สำหรับแสงกะพริบ (ฉบับสมบูรณ์) --- */
+@keyframes glow-box {
+  0%   { border-color: var(--lb-border); box-shadow: 0 0 5px rgba(245, 158, 11, 0.2); }
+  50%  { border-color: var(--lb-gold);   box-shadow: 0 0 20px rgba(245, 158, 11, 0.8); }
+  100% { border-color: var(--lb-border); box-shadow: 0 0 5px rgba(245, 158, 11, 0.2); }
+}
+
+/* คลาสสำหรับกล่องที่พร้อมให้กดเปิด */
+.can-open {
+  animation: glow-box 2s infinite ease-in-out !important;
+  border-width: 2px !important;
+  z-index: 10;
+  cursor: pointer;
+  transform: scale(1.02); /* ขยายใหญ่ขึ้นนิดนึงให้รู้ว่ากดได้ */
+}
+
+/* ปรับให้กะพริบตามสีของธีมนั้นๆ */
+.lb-card.can-open[data-theme="gold"]   { --lb-gold: #F59E0B; }
+.lb-card.can-open[data-theme="teal"]   { --lb-gold: #14B8A6; }
+.lb-card.can-open[data-theme="purple"] { --lb-gold: #8B5CF6; }
+.lb-card.can-open[data-theme="red"]    { --lb-gold: #EF4444; }
