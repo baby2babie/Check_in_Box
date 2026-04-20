@@ -43,21 +43,35 @@ function showError(msg) {
 // ============================================================
 //  LIFF
 // ============================================================
-async function initLiff() {
-  try {
-    await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true });
-    liffReady = true;
-    if (!liff.isLoggedIn()) {
-      liff.login({ redirectUri: location.href });
-      return;
-    }
-    liffProfile = await liff.getProfile();
-  } catch (e) {
-    console.warn('LIFF init failed:', e);
-    showError('❌ LIFF เริ่มต้นไม่ได้ กรุณาเปิดผ่าน LINE ครับ');
+// ============================================================
+//  INIT (ฉบับอัปเกรด Skeleton Loading)
+// ============================================================
+async function init() {
+  const grid = document.getElementById('lb-grid');
+  
+  // 1. แสดง Skeleton 4 กล่องทันทีที่เปิดหน้าเว็บ (ก่อนโหลด LIFF หรือ GAS)
+  grid.innerHTML = `
+    <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+    <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+    <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+    <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+  `;
+
+  // 2. เริ่มทำงานระบบ LIFF
+  await initLiff();
+
+  const params = new URLSearchParams(window.location.search);
+  const room   = params.get('room');
+
+  if (room) {
+    document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
+    await loadLootBoxForRoom(room);
+  } else if (liffReady && liff.isLoggedIn() && liffProfile) {
+    await loadLootBoxByUserId(liffProfile.userId);
+  } else {
+    showError('❌ กรุณาเปิดผ่าน LINE ครับ');
   }
 }
-
 // ============================================================
 //  INIT
 // ============================================================
