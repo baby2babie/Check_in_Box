@@ -117,7 +117,18 @@ async function loadLootBoxByUserId(userId) {
     showError('❌ โหลดข้อมูลไม่ได้ กรุณาลองใหม่ครับ');
   }
 }
-
+async function loadLootBoxByToken(token) {
+  try {
+    // เรียกไปที่ GAS โดยส่งค่า token ไปแทน userId
+    const data = await callGAS({ action: 'getLootBoxData', token: token });
+    if (data) {
+      renderLootGrid(data);
+    }
+  } catch (e) {
+    console.error(e);
+    showError('โหลดข้อมูลรางวัลไม่สำเร็จ');
+  }
+}
 // ============================================================
 //  RENDER
 // ============================================================
