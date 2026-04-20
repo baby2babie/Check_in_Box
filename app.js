@@ -63,7 +63,6 @@ async function initLiff() {
 //  INIT
 // ============================================================
 async function init() {
-  // แสดงข้อความโหลดสั้นๆ แทน Skeleton
   const grid = document.getElementById('lb-grid');
   if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:#94a3b8;">กำลังโหลดข้อมูล...</div>';
 
@@ -71,23 +70,31 @@ async function init() {
 
   const params = new URLSearchParams(window.location.search);
   const room   = params.get('room');
-  const token  = params.get('token'); // รองรับ Token จาก URL บน PC
+  const token  = params.get('token'); // เพิ่มการรับ Token
 
   if (room) {
-    // 1. กรณีเปิดด้วยเลขห้องตรงๆ (?room=xxx)
     document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
     await loadLootBoxForRoom(room);
   } else if (token) {
-    // 2. กรณีเปิดด้วย Token บน PC (?token=xxx)
-    await loadLootBoxByToken(token);
+    // ฟังก์ชันใหม่สำหรับโหลดผ่าน Token บน PC
+    await loadLootBoxByToken(token); 
   } else if (liffReady && liff.isLoggedIn() && liffProfile) {
-    // 3. เปิดปกติผ่าน Rich Menu
     await loadLootBoxByUserId(liffProfile.userId);
   } else {
-    showError('❌ ไม่พบข้อมูลห้องหรือสิทธิ์การเข้าถึง');
+    showError('❌ ไม่พบข้อมูลห้อง');
   }
 }
 
+// เพิ่มฟังก์ชันดึงข้อมูลจาก Token
+async function loadLootBoxByToken(token) {
+  try {
+    const result = await callGAS('getLootBoxData', { token: token });
+    if (!result.success) { showError('❌ ' + result.message); return; }
+    renderPage(result);
+  } catch (e) {
+    showError('❌ การเชื่อมต่อขัดข้อง');
+  }
+}
 // ============================================================
 //  LOAD DATA
 // ============================================================
