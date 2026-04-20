@@ -61,27 +61,31 @@ async function initLiff() {
 async function init() {
   const grid = document.getElementById('lb-grid');
   
-  // 1. วาดกล่องเทารอ (Skeleton)
+  // 1. วาด Skeleton รอ
   if (grid) {
-    grid.innerHTML = `<div class="skeleton-card"></div>`.repeat(4); // วาด 4 กล่องสั้นๆ
+    grid.innerHTML = `<div class="skeleton-card"></div>`.repeat(4);
   }
 
-  // 2. ล็อกอิน LINE (ถ้า Login ค้างบน PC ก็จะผ่านไปเลย)
+  // 2. ล็อกอิน LINE
   await initLiff();
 
-  // 3. เช็คว่าใน URL มีเลขห้องไหม (เช่น ?room=101)
   const params = new URLSearchParams(window.location.search);
   const room = params.get('room');
+  const token = params.get('token'); // เพิ่มบรรทัดนี้: ดึงค่า token มาเก็บไว้
 
   if (room) {
-    // ถ้ามีเลขห้อง ให้ใช้ฟังก์ชันดึงห้องที่คุณมีอยู่แล้วได้เลย!
+    // กรณีมี ?room=101 ใน URL
     document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
     await loadLootBoxForRoom(room); 
+  } else if (token) {
+    // กรณีมี ?token=... ใน URL (ที่คุณเห็นบน PC)
+    // ให้มันไปดึงข้อมูลผ่าน Token แทน จะได้ไม่ขึ้น Error
+    await loadLootBoxByToken(token); 
   } else if (liffReady && liff.isLoggedIn() && liffProfile) {
-    // ถ้าไม่มีเลขห้อง แต่ล็อกอิน LINE ไว้ ให้ดึงตาม UserId
+    // กรณีเข้าผ่าน LINE ปกติ
     await loadLootBoxByUserId(liffProfile.userId);
   } else {
-    showError('❌ ไม่พบเลขห้อง');
+    showError('❌ ไม่พบข้อมูลห้องหรือสิทธิ์การใช้งาน');
   }
 }
 // ============================================================
