@@ -6,10 +6,10 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbx57fi00n2RKu7b5jHu67vz
 const LIFF_ID = '2004478373-pUgVSZTj';
 
 const LB_CONFIG = [
-  { milestone: 7,  name: 'กล่องเงิน',     desc: 'ลุ้นรับส่วนลดสูงสุด 10.-',  theme: 'gold',   ms: 'ms-gold'   },
-  { milestone: 14, name: 'กล่องทอง',      desc: 'ลุ้นรับส่วนลดสูงสุด 20.-', theme: 'teal',   ms: 'ms-teal'   },
-  { milestone: 21, name: 'กล่องแพลตินัม', desc: 'ลุ้นรับส่วนลดสูงสุด 25.-', theme: 'purple', ms: 'ms-purple' },
-  { milestone: 28, name: 'กล่องตำนาน',    desc: 'ลุ้นรับส่วนลดสูงสุด 45.-', theme: 'red',    ms: 'ms-red'    },
+  { milestone: 7,  name: 'กล่องเงิน',     desc: 'ส่วนลด 5–10 บาท',  theme: 'gold',   ms: 'ms-gold'   },
+  { milestone: 14, name: 'กล่องทอง',      desc: 'ส่วนลด 5–20 บาท', theme: 'teal',   ms: 'ms-teal'   },
+  { milestone: 21, name: 'กล่องแพลตินัม', desc: 'ส่วนลด 5–25 บาท', theme: 'purple', ms: 'ms-purple' },
+  { milestone: 28, name: 'กล่องตำนาน',    desc: 'ส่วนลด 5–45 บาท', theme: 'red',    ms: 'ms-red'    },
 ];
 
 let lbOpening   = false;
@@ -58,66 +58,27 @@ async function initLiff() {
   }
 }
 
+// ============================================================
+//  INIT
+// ============================================================
 async function init() {
-  const grid = document.getElementById('lb-grid');
-  
-  // 1. วาด Skeleton รอ
-  if (grid) {
-    grid.innerHTML = `<div class="skeleton-card"></div>`.repeat(4);
-  }
-
-  // 2. ล็อกอิน LINE
-  async function init() {
-
-  const grid = document.getElementById('lb-grid');
-
-  
-
-  // 1. วาดกล่องเทารอ (Skeleton)
-
-  if (grid) {
-
-    grid.innerHTML = `<div class="skeleton-card"></div>`.repeat(4); // วาด 4 กล่องสั้นๆ
-
-  }
-
-
-
-  // 2. ล็อกอิน LINE (ถ้า Login ค้างบน PC ก็จะผ่านไปเลย)
-
   await initLiff();
 
-
-
-  // 3. เช็คว่าใน URL มีเลขห้องไหม (เช่น ?room=101)
-
   const params = new URLSearchParams(window.location.search);
-
-  const room = params.get('room');
-
-
+  const room   = params.get('room');
 
   if (room) {
-
-    // ถ้ามีเลขห้อง ให้ใช้ฟังก์ชันดึงห้องที่คุณมีอยู่แล้วได้เลย!
-
+    // เปิดจาก LINE flex ที่มี ?room=xxx
     document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
-
-    await loadLootBoxForRoom(room); 
-
+    await loadLootBoxForRoom(room);
   } else if (liffReady && liff.isLoggedIn() && liffProfile) {
-
-    // ถ้าไม่มีเลขห้อง แต่ล็อกอิน LINE ไว้ ให้ดึงตาม UserId
-
+    // เปิดจาก rich menu — ใช้ LINE userId
     await loadLootBoxByUserId(liffProfile.userId);
-
   } else {
-
-    showError('❌ ไม่พบเลขห้อง');
-
+    showError('❌ กรุณาเปิดผ่าน LINE ครับ');
   }
-
 }
+
 // ============================================================
 //  LOAD DATA
 // ============================================================
@@ -140,18 +101,7 @@ async function loadLootBoxByUserId(userId) {
     showError('❌ โหลดข้อมูลไม่ได้ กรุณาลองใหม่ครับ');
   }
 }
-async function loadLootBoxByToken(token) {
-  try {
-    // เรียกไปที่ GAS โดยส่งค่า token ไปแทน userId
-    const data = await callGAS({ action: 'getLootBoxData', token: token });
-    if (data) {
-      renderLootGrid(data);
-    }
-  } catch (e) {
-    console.error(e);
-    showError('โหลดข้อมูลรางวัลไม่สำเร็จ');
-  }
-}
+
 // ============================================================
 //  RENDER
 // ============================================================
@@ -266,73 +216,41 @@ function closeLootPopup() {
 // ============================================================
 //  LOOT ICON (coin svg)
 // ============================================================
-// แก้ไขในไฟล์ app.js แทนที่ฟังก์ชัน getLootIcon เดิม
 function getLootIcon(amount) {
-  const isBigWin = amount >= 25;
-  const isLegend = amount >= 45;
-  const uid = 'epic-coin-' + Math.random().toString(36).substr(2, 9);
-  
-  // สีทองระดับ High-End
-  const goldWhite  = '#FFFFFF';
-  const goldSun    = '#FFD700';
-  const goldBright = '#FDE68A';
-  const goldMain   = '#FACC15';
-  const goldDeep   = '#B45309';
-
-  // ตั้งค่าความอลังการ (รัศมีแฉกจะหมุนวนรอบๆ)
-  const rayOpacity = isLegend ? '0.5' : isBigWin ? '0.3' : '0.1';
-  const glowSize   = isLegend ? '60' : isBigWin ? '50' : '40';
+  const big    = amount >= 30;
+  const medium = amount >= 15;
+  const c1   = big ? '#FFD700' : medium ? '#FACC15' : '#D4A017';
+  const c2   = big ? '#FF8C00' : medium ? '#D97706' : '#92400E';
+  const c3   = big ? '#FFF9C4' : medium ? '#FEF08A' : '#FDE68A';
+  const glow = big ? '#FFD700' : medium ? '#FACC15' : '#D4A017';
+  const uid  = 'coin-' + Math.random().toString(36).substr(2, 9);
 
   return `
-  <svg width="140" height="140" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="margin: -10px;">
+  <svg width="88" height="88" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <radialGradient id="${uid}-core" cx="50%" cy="50%" r="50%">
-        <stop offset="20%"  stop-color="${goldWhite}" stop-opacity="0.8"/>
-        <stop offset="100%" stop-color="${goldSun}"   stop-opacity="0"/>
+      <radialGradient id="${uid}-coin" cx="35%" cy="28%" r="65%">
+        <stop offset="0%"   stop-color="${c3}"/>
+        <stop offset="55%"  stop-color="${c1}"/>
+        <stop offset="100%" stop-color="${c2}"/>
       </radialGradient>
-
-      <linearGradient id="${uid}-slash" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="45%" stop-color="white" stop-opacity="0"/>
-        <stop offset="50%" stop-color="white" stop-opacity="0.6"/>
-        <stop offset="55%" stop-color="white" stop-opacity="0"/>
-      </linearGradient>
-
-      <radialGradient id="${uid}-metal" cx="30%" cy="30%" r="70%">
-        <stop offset="0%"   stop-color="${goldBright}"/>
-        <stop offset="50%"  stop-color="${goldMain}"/>
-        <stop offset="100%" stop-color="${goldDeep}"/>
+      <radialGradient id="${uid}-glow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="${glow}" stop-opacity="0.6"/>
+        <stop offset="100%" stop-color="${glow}" stop-opacity="0"/>
       </radialGradient>
     </defs>
-
-    <g transform="translate(60,60)" opacity="${rayOpacity}">
-      ${[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(deg => `
-        <polygon points="0,0 -4,-60 4,-60" fill="${goldSun}" transform="rotate(${deg})" opacity="0.4"/>
-      `).join('')}
-    </g>
-
-    <circle cx="60" cy="60" r="${glowSize}" fill="url(#${uid}-core)" opacity="0.6"/>
-
-    <circle cx="60" cy="62" r="39" fill="${goldDeep}"/>
-    
-    <circle cx="60" cy="60" r="38" fill="url(#${uid}-metal)"/>
-    
-    <circle cx="60" cy="60" r="38" fill="url(#${uid}-slash)"/>
-    
-    ${isBigWin ? `
-      <circle cx="35" cy="35" r="2" fill="white">
-        <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite" />
-      </circle>
-      <circle cx="85" cy="45" r="1.5" fill="white">
-        <animate attributeName="opacity" values="0;1;0" dur="1.5s" begin="0.5s" repeatCount="indefinite" />
-      </circle>
-    ` : ''}
-
-    <text x="60" y="73" text-anchor="middle" font-size="38" font-weight="900" 
-          font-family="Arial Black" fill="${goldDeep}" opacity="0.6">฿</text>
-    <text x="60" y="71" text-anchor="middle" font-size="38" font-weight="900" 
-          font-family="Arial Black" fill="${goldWhite}">฿</text>
+    <circle cx="50" cy="50" r="46" fill="url(#${uid}-glow)"/>
+    <ellipse cx="50" cy="92" rx="26" ry="7" fill="rgba(0,0,0,0.35)"/>
+    <circle cx="50" cy="48" r="42" fill="${c2}"/>
+    <circle cx="50" cy="48" r="34" fill="url(#${uid}-coin)"/>
+    <circle cx="50" cy="48" r="32" fill="none" stroke="${c3}" stroke-width="2" opacity="0.7"/>
+    <ellipse cx="42" cy="28" rx="18" ry="8" fill="white" opacity="0.35"/>
+    <text x="50" y="58"
+      text-anchor="middle" font-size="34" font-weight="900"
+      font-family="Arial Black,Arial"
+      fill="${c2}" stroke="${c3}" stroke-width="1.4">฿</text>
   </svg>`;
 }
+
 // ============================================================
 //  CONFETTI
 // ============================================================
