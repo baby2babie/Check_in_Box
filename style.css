@@ -1,103 +1,279 @@
-/* style.css - ฉบับรวมร่างความสวยพรีเมียม */
-:root {
-  --lb-bg:     #0F172A;
-  --lb-card:   rgba(30, 41, 59, 0.7); /* ปรับให้โปร่งแสงเพื่อทำกระจกฝ้า */
-  --lb-border: rgba(255, 255, 255, 0.1);
-  --lb-gold:   #F59E0B;
-  --lb-teal:   #14B8A6;
-  --lb-text:   #F1F5F9;
-  --lb-sub:    #94A3B8;
-}
+/* ============================================================
+   กล่องสุ่มรางวัล — style.css (Premium Glow & Coin Edition)
+   ============================================================ */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-body {
-  background: radial-gradient(circle at top, #1E293B 0%, #0F172A 100%) !important; /* ไล่สีวงกลมจากบนลงล่าง */
+:root {
+  --lb-bg:     #0F172A; /* Slate 900 */
+  --lb-card:   #1E293B; /* Slate 800 */
+  --lb-border: #334155; /* Slate 700 */
+  --lb-gold:   #F59E0B; /* Amber 500 */
+  --lb-teal:   #14B8A6; /* Teal 500 */
+  --lb-purple: #8B5CF6; /* Violet 500 */
+  --lb-red:    #EF4444; /* Red 500 */
+  --lb-text:   #F1F5F9; /* Slate 100 */
+  --lb-sub:    #94A3B8; /* Slate 400 */
+  
+  /* Premium Glows */
+  --glow-gold: 0 0 20px rgba(245, 158, 11, 0.4);
+  --glow-teal: 0 0 20px rgba(20, 184, 166, 0.4);
+  --glow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+html, body {
+  background: var(--lb-bg);
   min-height: 100vh;
   font-family: 'Sarabun', sans-serif;
   color: var(--lb-text);
   padding-bottom: 40px;
+  overflow-x: hidden; /* Prevent confetti scroll */
 }
 
-/* HEADER - ปรับให้ดูนวลตาขึ้น */
+/* ===== HEADER ===== */
 .header {
   text-align: center;
-  padding: 40px 20px 20px;
+  padding: 40px 20px 24px;
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0) 100%);
+  position: relative;
 }
 .header-title {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--lb-gold);
-  text-shadow: 0 0 20px rgba(245,158,11,0.5);
+  text-shadow: var(--glow-gold); /* Golden Aura */
+  letter-spacing: -0.5px;
+}
+.header-sub  { font-size: 14px; color: var(--lb-sub); margin-top: 8px; font-weight: 400; }
+.header-room { 
+  font-size: 16px; 
+  color: var(--lb-teal); 
+  margin-top: 12px; 
+  font-weight: 700;
+  padding: 4px 12px;
+  background: rgba(20, 184, 166, 0.1);
+  border-radius: 99px;
+  display: inline-block;
 }
 
-/* GRID - การจัดวาง 2 คอลัมน์ที่ถูกต้อง */
+/* ===== COUNT BADGE ===== */
+.count-wrap  { display: flex; justify-content: center; margin: 8px 0 28px; }
+.count-badge {
+  background: var(--lb-card);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 99px;
+  padding: 12px 32px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--lb-gold);
+  box-shadow: var(--glow-card), var(--glow-gold); /* Subtle Gold Glow */
+  transition: all 0.3s ease;
+}
+.count-badge span { font-size: 18px; margin: 0 2px; }
+
+/* ===== GRID ===== */
 .lb-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* จัดเรียง 2 กล่องต่อแถวตามรูปที่ 1 */
-  gap: 16px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
   padding: 0 20px;
-  max-width: 450px;
+  max-width: 420px;
   margin: 0 auto;
 }
 
-/* CARD - เอฟเฟกต์กระจกฝ้า (สวยขั้นเทพ) */
+/* ===== CARD ===== */
 .lb-card {
-  background: var(--lb-card) !important;
-  backdrop-filter: blur(12px); /* เอฟเฟกต์เบลอหลังกระจก */
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--lb-border) !important;
-  border-radius: 28px !important; /* ขอบมนขึ้นเหมือนแอปสมัยใหม่ */
-  padding: 24px 16px 20px;
+  background: var(--lb-card);
+  border: 1px solid var(--lb-border);
+  border-radius: 24px;
+  padding: 28px 18px 24px;
   text-align: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--glow-card);
 }
-
-/* แสงฟุ้งสำหรับกล่องที่กดได้ */
-.lb-card:not(.locked):not(.used) {
-  border: 1px solid var(--lb-gold) !important;
-  animation: box-glow 2s infinite;
+.lb-card:hover:not(.used):not(.locked) {
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: var(--glow-card), var(--glow-gold);
+  transform: translateY(-2px);
 }
+.lb-card:active:not(.used):not(.locked) { transform: scale(0.96); }
 
-@keyframes box-glow {
-  0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.3); }
-  50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.6); }
-  100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.3); }
-}
+/* Card States */
+.lb-card.used   { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.8); border-color: var(--lb-border); }
+.lb-card.locked { opacity: 0.4; cursor: not-allowed; border-style: dashed; }
 
-/* ปรับแต่งวงกลมไอคอน */
-.lb-circle {
-  width: 80px; height: 80px; border-radius: 50%;
-  margin: 0 auto 15px;
+/* Locked Overlay Icon */
+.lb-card.locked .lb-circle::after {
+  content: '🔒';
+  position: absolute;
+  font-size: 24px;
+  background: rgba(15, 23, 42, 0.8);
+  inset: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 36px;
-  background: rgba(255,255,255,0.05);
-  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 50%;
 }
 
-.lb-circle.gold { border-color: var(--lb-gold); box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); }
-.lb-circle.red  { border-color: var(--lb-red); box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); }
+/* ===== ICON ===== */
+.lb-icon-wrap { position: relative; width: 84px; height: 84px; margin: 0 auto 16px; }
+.lb-circle {
+  width: 84px; height: 84px; border-radius: 50%;
+  border: 3px solid transparent;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px; position: relative;
+  transition: all 0.2s ease;
+}
 
-/* ปุ่มรับรางวัล */
+/* Icon Tiers with Aura */
+.lb-circle.gold   { background: rgba(245, 158, 11, 0.1); border-color: var(--lb-gold); box-shadow: var(--glow-gold); }
+.lb-circle.teal   { background: rgba(20, 184, 166, 0.1); border-color: var(--lb-teal); box-shadow: var(--glow-teal); }
+.lb-circle.purple { background: rgba(139, 92, 246, 0.1); border-color: var(--lb-purple); box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
+.lb-circle.red    { background: rgba(239, 68, 68, 0.1);  border-color: var(--lb-red); box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+
+/* Rotating Arc Animation */
+.lb-arc { position: absolute; inset: -5px; border-radius: 50%; border: 3px solid transparent; animation: lbArcSpin 3s linear infinite; }
+.lb-arc.gold   { border-top-color: var(--lb-gold); border-right-color: var(--lb-gold); }
+.lb-arc.teal   { border-top-color: var(--lb-teal); border-right-color: var(--lb-teal); }
+.lb-arc.purple { border-top-color: var(--lb-purple); border-right-color: var(--lb-purple); }
+.lb-arc.red    { border-top-color: var(--lb-red); border-right-color: var(--lb-red); }
+
+@keyframes lbArcSpin {
+  0%   { transform: rotate(0deg);   opacity: 0.8; }
+  50%  { transform: rotate(180deg); opacity: 0.5; }
+  100% { transform: rotate(360deg); opacity: 0.8; }
+}
+
+/* Card Text */
+.lb-name { font-size: 17px; font-weight: 700; color: var(--lb-text); letter-spacing: -0.3px; }
+.lb-desc { font-size: 13px; color: var(--lb-sub); margin-top: 5px; font-weight: 400; }
+.lb-ms   {
+  font-size: 12px; font-weight: 700;
+  margin-top: 12px; padding: 5px 12px;
+  border-radius: 99px; display: inline-block;
+}
+.ms-gold   { background: rgba(245, 158, 11, 0.15); color: #FBBF24; }
+.ms-teal   { background: rgba(20, 184, 166, 0.15); color: #2DD4BF; }
+.ms-purple { background: rgba(139, 92, 246, 0.15); color: #A78BFA; }
+.ms-red    { background: rgba(239, 68, 68, 0.15);  color: #FCA5A5; }
+
+/* ===== POPUP OVERLAY ===== */
+.lb-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(15, 23, 42, 0.9); /* Darker Slate */
+  backdrop-filter: blur(4px); /* Modern blur effect */
+  z-index: 100;
+  align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.3s ease;
+}
+.lb-overlay.show { display: flex; opacity: 1; }
+
+.lb-popup {
+  background: var(--lb-card);
+  border: 1px solid var(--lb-border);
+  border-radius: 28px;
+  width: calc(100% - 40px);
+  max-width: 340px;
+  padding: 36px 28px 32px;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  transform: scale(0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.lb-overlay.show .lb-popup { transform: scale(1); }
+
+/* Spinning Animation */
+.lb-spin-wrap { width: 110px; height: 110px; margin: 0 auto 24px; position: relative; }
+.lb-spin-ring {
+  width: 110px; height: 110px; border-radius: 50%;
+  border: 4px solid rgba(245, 158, 11, 0.1);
+  border-top-color: var(--lb-gold);
+  position: absolute;
+  animation: lbSpin 1s linear infinite;
+  box-shadow: var(--glow-gold);
+}
+@keyframes lbSpin { to { transform: rotate(360deg); } }
+
+.lb-spin-icon {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 48px;
+  animation: lbBounce 0.6s ease-in-out infinite alternate;
+}
+@keyframes lbBounce {
+  from { transform: scale(0.95); }
+  to   { transform: scale(1.05); }
+}
+
+.lb-popup-title { font-size: 20px; font-weight: 700; color: var(--lb-text); margin-bottom: 8px; }
+.lb-popup-sub   { font-size: 14px; color: var(--lb-sub); }
+
+/* Result State */
+.lb-result      { display: none; }
+.lb-result.show { display: block; animation: lbFadeIn 0.5s ease forwards; }
+@keyframes lbFadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Beautiful Coin styles (CSS only) */
+.lb-result-icon { 
+  margin-bottom: 16px; 
+  display: flex; justify-content: center; 
+  filter: drop-shadow(var(--glow-teal)); /* Teal Glow for Coin */
+}
+
+.lb-result-congrats { font-size: 24px; font-weight: 700; color: var(--lb-gold); margin-bottom: 8px; text-shadow: var(--glow-gold); }
+.lb-result-name     { font-size: 16px; color: var(--lb-sub); margin-bottom: 10px; }
+.lb-result-amount   { font-size: 52px; font-weight: 700; color: var(--lb-teal); letter-spacing: -1px; text-shadow: var(--glow-teal); }
+.lb-result-note     { font-size: 15px; color: var(--lb-sub); margin-bottom: 24px; }
+
 .lb-confirm-btn {
-  width: 100%; padding: 16px; border: none; border-radius: 20px !important;
-  background: linear-gradient(135deg, var(--lb-teal), #1D4ED8) !important;
+  width: 100%; padding: 16px; border: none; border-radius: 14px;
+  background: linear-gradient(135deg, var(--lb-teal) 0%, #1D4ED8 100%);
   color: white; font-size: 18px; font-weight: 700;
-  box-shadow: 0 8px 20px rgba(20, 184, 166, 0.3);
+  font-family: 'Sarabun', sans-serif; cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+.lb-confirm-btn:hover {
+  box-shadow: 0 6px 12px rgba(20, 184, 166, 0.3);
+  transform: translateY(-1px);
+}
+.lb-confirm-btn:active { transform: scale(0.98); }
+
+/* ===== CONFETTI ===== */
+.lb-confetti      { position: fixed; inset: 0; pointer-events: none; z-index: 110; display: none; }
+.lb-confetti.show { display: block; }
+.lb-dot { position: absolute; border-radius: 2px; animation: lbFall linear forwards; }
+@keyframes lbFall {
+  0%   { transform: translateY(-20px) rotate(0deg);   opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
 }
 
-/* --- ส่วนที่เพิ่มใหม่สำหรับแสงกะพริบ (ใช้ชุดเดียวพอครับ) --- */
-@keyframes glow-box {
-  0%   { border-color: var(--lb-border); box-shadow: 0 0 5px rgba(245, 158, 11, 0.2); }
-  50%  { border-color: var(--lb-gold);   box-shadow: 0 0 20px rgba(245, 158, 11, 0.8); } /* เพิ่มความสว่างเป็น 0.8 จะได้เห็นชัดๆ ในมือถือ */
-  100% { border-color: var(--lb-border); box-shadow: 0 0 5px rgba(245, 158, 11, 0.2); }
+/* ===== TOAST ===== */
+.toast {
+  position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+  padding: 14px 28px; border-radius: 99px;
+  font-size: 16px; display: none; z-index: 999;
+  text-align: center; max-width: 90%; font-weight: 700;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+  animation: lbSlideDown 0.3s ease-out;
 }
+@keyframes lbSlideDown {
+  from { transform: translate(-50%, -20px); opacity: 0; }
+  to   { transform: translate(-50%, 0); opacity: 1; }
+}
+.toast.success { background: #065F46; color: white; display: block; border: 1px solid #10B981; }
+.toast.error   { background: #7F1D1D; color: white; display: block; border: 1px solid #EF4444; }
 
-/* คลาสพิเศษที่จะถูกใส่ผ่าน JS เมื่อกล่องพร้อมเปิด */
-.can-open {
-  animation: glow-box 2s infinite ease-in-out !important;
-  border-width: 2px !important; /* ทำให้ขอบหนาขึ้นตอนกะพริบ จะได้ดูพรีเมียม */
-  z-index: 10; /* ดันกล่องที่กะพริบให้ลอยขึ้นมาเด่นๆ */
+/* ===== LOADING ===== */
+.loading {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--lb-sub);
+  padding: 80px 20px;
+  font-size: 17px;
+  font-weight: 400;
 }
-/* ---------------------------------- */
