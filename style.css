@@ -1,28 +1,32 @@
-/* style.css - ฉบับรวมร่างความสวยพรีเมียม */
+/* ============================================================
+   กล่องสุ่มรางวัล — style.css
+   ============================================================ */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
 :root {
   --lb-bg:     #0F172A;
-  --lb-card:   rgba(30, 41, 59, 0.7); /* ปรับให้โปร่งแสงเพื่อทำกระจกฝ้า */
-  --lb-border: rgba(255, 255, 255, 0.1);
+  --lb-card:   #1E293B;
+  --lb-border: #334155;
   --lb-gold:   #F59E0B;
   --lb-teal:   #14B8A6;
   --lb-text:   #F1F5F9;
   --lb-sub:    #94A3B8;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  background: radial-gradient(circle at top, #1E293B 0%, #0F172A 100%) !important; /* ไล่สีวงกลมจากบนลงล่าง */
+html, body {
+  background: var(--lb-bg);
   min-height: 100vh;
   font-family: 'Sarabun', sans-serif;
   color: var(--lb-text);
   padding-bottom: 40px;
 }
 
-/* HEADER - ปรับให้ดูนวลตาขึ้น */
+/* ===== HEADER ===== */
 .header {
   text-align: center;
-  padding: 40px 20px 20px;
+  padding: 32px 20px 20px;
+  background: linear-gradient(180deg, #1E293B 0%, transparent 100%);
 }
 .header-title {
   font-size: 28px;
@@ -30,59 +34,191 @@ body {
   color: var(--lb-gold);
   text-shadow: 0 0 20px rgba(245,158,11,0.5);
 }
+.header-sub  { font-size: 14px; color: var(--lb-sub); margin-top: 6px; }
+.header-room { font-size: 15px; color: var(--lb-teal); margin-top: 8px; font-weight: 700; }
+.header-tier { font-size: 13px; color: var(--lb-sub); margin-top: 4px; }
 
-/* GRID - การจัดวาง 2 คอลัมน์ที่ถูกต้อง */
+/* ===== COUNT BADGE ===== */
+.count-wrap  { display: flex; justify-content: center; margin: 16px 0 24px; }
+.count-badge {
+  background: var(--lb-card);
+  border: 1px solid var(--lb-gold);
+  border-radius: 99px;
+  padding: 10px 28px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--lb-gold);
+}
+
+/* ===== GRID ===== */
 .lb-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* จัดเรียง 2 กล่องต่อแถวตามรูปที่ 1 */
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   padding: 0 20px;
-  max-width: 450px;
+  max-width: 400px;
   margin: 0 auto;
 }
 
-/* CARD - เอฟเฟกต์กระจกฝ้า (สวยขั้นเทพ) */
+/* ===== CARD ===== */
 .lb-card {
-  background: var(--lb-card) !important;
-  backdrop-filter: blur(12px); /* เอฟเฟกต์เบลอหลังกระจก */
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--lb-border) !important;
-  border-radius: 28px !important; /* ขอบมนขึ้นเหมือนแอปสมัยใหม่ */
+  background: var(--lb-card);
+  border: 1px solid var(--lb-border);
+  border-radius: 20px;
   padding: 24px 16px 20px;
   text-align: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+  position: relative;
+  overflow: hidden;
 }
+.lb-card:active:not(.used):not(.locked) { transform: scale(0.96); }
+.lb-card.used   { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
+.lb-card.locked { opacity: 0.3; cursor: not-allowed; }
 
-/* แสงฟุ้งสำหรับกล่องที่กดได้ */
-.lb-card:not(.locked):not(.used) {
-  border: 1px solid var(--lb-gold) !important;
-  animation: box-glow 2s infinite;
-}
-
-@keyframes box-glow {
-  0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.3); }
-  50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.6); }
-  100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.3); }
-}
-
-/* ปรับแต่งวงกลมไอคอน */
+/* ===== ICON ===== */
+.lb-icon-wrap { position: relative; width: 80px; height: 80px; margin: 0 auto 14px; }
 .lb-circle {
   width: 80px; height: 80px; border-radius: 50%;
-  margin: 0 auto 15px;
+  border: 3px solid transparent;
   display: flex; align-items: center; justify-content: center;
-  font-size: 36px;
-  background: rgba(255,255,255,0.05);
-  border: 2px solid rgba(255,255,255,0.1);
+  font-size: 36px; position: relative;
+}
+.lb-circle.gold   { background: rgba(245,158,11,0.15); border-color: var(--lb-gold); }
+.lb-circle.teal   { background: rgba(20,184,166,0.15); border-color: var(--lb-teal); }
+.lb-circle.purple { background: rgba(139,92,246,0.15); border-color: #8B5CF6; }
+.lb-circle.red    { background: rgba(239,68,68,0.15);  border-color: #EF4444; }
+
+.lb-arc { position: absolute; inset: -4px; border-radius: 50%; border: 3px solid transparent; }
+.lb-arc.gold   { border-top-color: var(--lb-gold); border-right-color: var(--lb-gold); transform: rotate(-30deg); }
+.lb-arc.teal   { border-top-color: var(--lb-teal); border-right-color: var(--lb-teal); transform: rotate(-30deg); }
+.lb-arc.purple { border-top-color: #8B5CF6; border-right-color: #8B5CF6; transform: rotate(-30deg); }
+.lb-arc.red    { border-top-color: #EF4444; border-right-color: #EF4444; transform: rotate(-30deg); }
+
+.lb-name { font-size: 16px; font-weight: 700; color: var(--lb-text); }
+.lb-desc { font-size: 12px; color: var(--lb-sub); margin-top: 4px; }
+.lb-ms   {
+  font-size: 11px; font-weight: 700;
+  margin-top: 10px; padding: 4px 10px;
+  border-radius: 99px; display: inline-block;
+}
+.ms-gold   { background: rgba(245,158,11,0.2); color: var(--lb-gold); }
+.ms-teal   { background: rgba(20,184,166,0.2); color: var(--lb-teal); }
+.ms-purple { background: rgba(139,92,246,0.2); color: #A78BFA; }
+.ms-red    { background: rgba(239,68,68,0.2);  color: #FCA5A5; }
+
+/* ===== POPUP OVERLAY ===== */
+.lb-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 100;
+  align-items: center; justify-content: center;
+}
+.lb-overlay.show { display: flex; }
+
+.lb-popup {
+  background: var(--lb-card);
+  border: 1px solid var(--lb-border);
+  border-radius: 24px;
+  width: calc(100% - 48px);
+  max-width: 320px;
+  padding: 32px 24px 28px;
+  text-align: center;
+  animation: lbPopIn 0.3s cubic-bezier(.175,.885,.32,1.275);
+}
+@keyframes lbPopIn {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
 }
 
-.lb-circle.gold { border-color: var(--lb-gold); box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); }
-.lb-circle.red  { border-color: var(--lb-red); box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); }
+/* spinning */
+.lb-spin-wrap { width: 100px; height: 100px; margin: 0 auto 20px; position: relative; }
+.lb-spin-ring {
+  width: 100px; height: 100px; border-radius: 50%;
+  border: 4px solid rgba(255,255,255,0.1);
+  border-top-color: var(--lb-gold);
+  position: absolute;
+  animation: lbSpin 0.8s linear infinite;
+}
+@keyframes lbSpin { to { transform: rotate(360deg); } }
 
-/* ปุ่มรับรางวัล */
+.lb-spin-icon {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 44px;
+  animation: lbBounce 0.5s ease infinite alternate;
+}
+@keyframes lbBounce {
+  from { transform: scale(0.9); }
+  to   { transform: scale(1.1); }
+}
+
+.lb-popup-title { font-size: 18px; font-weight: 700; color: var(--lb-text); margin-bottom: 6px; }
+.lb-popup-sub   { font-size: 13px; color: var(--lb-sub); }
+
+/* result */
+.lb-result      { display: none; }
+.lb-result.show { display: block; animation: lbFade 0.4s ease; }
+@keyframes lbFade {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.lb-result-icon     { font-size: 64px; margin-bottom: 12px; }
+.lb-result-congrats { font-size: 22px; font-weight: 700; color: var(--lb-gold); margin-bottom: 6px; }
+.lb-result-name     { font-size: 15px; color: var(--lb-sub); margin-bottom: 8px; }
+.lb-result-amount   { font-size: 44px; font-weight: 700; color: var(--lb-teal); }
+.lb-result-note     { font-size: 14px; color: var(--lb-sub); margin-bottom: 20px; }
+
 .lb-confirm-btn {
-  width: 100%; padding: 16px; border: none; border-radius: 20px !important;
-  background: linear-gradient(135deg, var(--lb-teal), #1D4ED8) !important;
-  color: white; font-size: 18px; font-weight: 700;
-  box-shadow: 0 8px 20px rgba(20, 184, 166, 0.3);
+  width: 100%; padding: 14px; border: none; border-radius: 12px;
+  background: linear-gradient(135deg, var(--lb-teal), #1D4ED8);
+  color: white; font-size: 17px; font-weight: 700;
+  font-family: 'Sarabun', sans-serif; cursor: pointer;
+  transition: transform 0.1s;
+}
+.lb-confirm-btn:active { transform: scale(0.97); }
+
+/* ===== CONFETTI ===== */
+.lb-confetti      { position: fixed; inset: 0; pointer-events: none; z-index: 110; display: none; }
+.lb-confetti.show { display: block; }
+.lb-dot { position: absolute; border-radius: 2px; animation: lbFall linear forwards; }
+@keyframes lbFall {
+  0%   { transform: translateY(-20px) rotate(0deg);   opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* --- ส่วนที่เพิ่มใหม่สำหรับแสงกะพริบ --- */
+@keyframes glow-box {
+  0%   { border-color: var(--lb-border); box-shadow: 0 0 5px rgba(245, 158, 11, 0.2); }
+  50%  { border-color: var(--lb-gold);   box-shadow: 0 0 20px rgba(245, 158, 11, 0.6); }
+  100% { border-color: var(--lb-border); box-shadow: 0 0 5px rgba(245, 158, 11, 0.2); }
+}
+
+/* คลาสพิเศษที่จะถูกใส่ผ่าน JS เมื่อกล่องพร้อมเปิด */
+.can-open {
+  animation: glow-box 2s infinite ease-in-out !important;
+  border-width: 2px !important;
+  z-index: 10;
+}
+/* ---------------------------------- */
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  padding: 12px 24px; border-radius: 99px;
+  font-size: 15px; display: none; z-index: 999;
+  text-align: center; max-width: 85%; font-weight: 700;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+}
+.toast.success { background: #065F46; color: white; display: block; }
+.toast.error   { background: #7F1D1D; color: white; display: block; }
+
+/* ===== LOADING ===== */
+.loading {
+  text-align: center;
+  color: var(--lb-sub);
+  padding: 60px 20px;
+  font-size: 16px;
 }
