@@ -146,29 +146,32 @@ function renderLootGrid(boxes) {
 
   LB_CONFIG.forEach(cfg => {
     const info     = boxes[cfg.milestone] || {};
-    const hasBox   = info.token && !info.opened;
+    const hasBox   = info.token && !info.opened; // เงื่อนไข: มีสิทธิ์เปิดและยังไม่ถูกใช้
     const isOpened = info.token &&  info.opened;
     const isLocked = !info.token;
-    const icon     = isOpened ? '🎁' : isLocked ? '🔒' : '🎁';
 
     const card = document.createElement('div');
+    // เพิ่มเงื่อนไขใส่คลาส can-open ถ้าพร้อมเปิด
     card.className = 'lb-card'
-      + (isOpened ? ' used'   : '')
-      + (isLocked ? ' locked' : '');
+      + (hasBox   ? ' can-open' : '') 
+      + (isOpened ? ' used'     : '')
+      + (isLocked ? ' locked'   : '');
+    
     card.id = 'lb-card-' + cfg.milestone;
+    card.setAttribute('data-theme', cfg.theme); // ใส่ data-theme เพื่อให้สีไฟกะพริบตรงกับธีม
 
     card.innerHTML = `
       <div class="lb-icon-wrap">
         <div class="lb-circle ${cfg.theme}">
           <div class="lb-arc ${cfg.theme}"></div>
-          ${icon}
+          ${isLocked ? '🔒' : '🎁'}
         </div>
       </div>
       <div class="lb-name">${cfg.name}</div>
       <div class="lb-desc">${
+        hasBox   ? 'กดเพื่อเปิดกล่อง' : 
         isOpened ? 'เปิดแล้ว' :
-        isLocked ? 'ยังไม่ถึงรอบ' :
-        cfg.desc
+        'ยังไม่ถึงรอบ'
       }</div>
       <div class="lb-ms ${cfg.ms}">ครบ ${cfg.milestone} วัน</div>
     `;
