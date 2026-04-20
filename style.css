@@ -1,42 +1,88 @@
-/* 1. ปรับพื้นหลังให้ดูมีมิติ (ทับส่วนเดิม) */
+/* style.css - ฉบับรวมร่างความสวยพรีเมียม */
+:root {
+  --lb-bg:     #0F172A;
+  --lb-card:   rgba(30, 41, 59, 0.7); /* ปรับให้โปร่งแสงเพื่อทำกระจกฝ้า */
+  --lb-border: rgba(255, 255, 255, 0.1);
+  --lb-gold:   #F59E0B;
+  --lb-teal:   #14B8A6;
+  --lb-text:   #F1F5F9;
+  --lb-sub:    #94A3B8;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
-  background: radial-gradient(circle at top center, #1E293B 0%, #0F172A 100%);
-  color: #F1F5F9;
-  font-family: 'Sarabun', sans-serif;
+  background: radial-gradient(circle at top, #1E293B 0%, #0F172A 100%) !important; /* ไล่สีวงกลมจากบนลงล่าง */
   min-height: 100vh;
-  margin: 0;
-  display: flex;
-  justify-content: center;
+  font-family: 'Sarabun', sans-serif;
+  color: var(--lb-text);
+  padding-bottom: 40px;
 }
 
-/* 2. Glassmorphism Card (ปรับปรุงจาก .lb-card เดิม) */
+/* HEADER - ปรับให้ดูนวลตาขึ้น */
+.header {
+  text-align: center;
+  padding: 40px 20px 20px;
+}
+.header-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--lb-gold);
+  text-shadow: 0 0 20px rgba(245,158,11,0.5);
+}
+
+/* GRID - การจัดวาง 2 คอลัมน์ที่ถูกต้อง */
+.lb-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* จัดเรียง 2 กล่องต่อแถวตามรูปที่ 1 */
+  gap: 16px;
+  padding: 0 20px;
+  max-width: 450px;
+  margin: 0 auto;
+}
+
+/* CARD - เอฟเฟกต์กระจกฝ้า (สวยขั้นเทพ) */
 .lb-card {
-  background: rgba(30, 41, 59, 0.6) !important;
-  backdrop-filter: blur(12px); /* เอฟเฟกต์กระจกฝ้า */
+  background: var(--lb-card) !important;
+  backdrop-filter: blur(12px); /* เอฟเฟกต์เบลอหลังกระจก */
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 28px !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: 1px solid var(--lb-border) !important;
+  border-radius: 28px !important; /* ขอบมนขึ้นเหมือนแอปสมัยใหม่ */
+  padding: 24px 16px 20px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 3. เอฟเฟกต์แสงฟุ้งสำหรับกล่องที่กดได้ */
+/* แสงฟุ้งสำหรับกล่องที่กดได้ */
 .lb-card:not(.locked):not(.used) {
-  border: 1px solid rgba(245, 158, 11, 0.5) !important;
-  animation: glow-pulse 2s infinite;
-  cursor: pointer;
+  border: 1px solid var(--lb-gold) !important;
+  animation: box-glow 2s infinite;
 }
 
-@keyframes glow-pulse {
-  0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.2); }
-  50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.5); }
-  100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.2); }
+@keyframes box-glow {
+  0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.6); }
+  100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.3); }
 }
 
-/* 4. ปรับปรุงปุ่มรับรางวัลให้ดู Modern ขึ้น */
+/* ปรับแต่งวงกลมไอคอน */
+.lb-circle {
+  width: 80px; height: 80px; border-radius: 50%;
+  margin: 0 auto 15px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  background: rgba(255,255,255,0.05);
+  border: 2px solid rgba(255,255,255,0.1);
+}
+
+.lb-circle.gold { border-color: var(--lb-gold); box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); }
+.lb-circle.red  { border-color: var(--lb-red); box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); }
+
+/* ปุ่มรับรางวัล */
 .lb-confirm-btn {
-  background: linear-gradient(135deg, #14B8A6 0%, #0891B2 100%) !important;
-  box-shadow: 0 4px 15px rgba(20, 184, 166, 0.4);
-  border-radius: 16px !important;
-  letter-spacing: 1px;
+  width: 100%; padding: 16px; border: none; border-radius: 20px !important;
+  background: linear-gradient(135deg, var(--lb-teal), #1D4ED8) !important;
+  color: white; font-size: 18px; font-weight: 700;
+  box-shadow: 0 8px 20px rgba(20, 184, 166, 0.3);
 }
