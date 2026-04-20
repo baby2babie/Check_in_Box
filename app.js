@@ -61,36 +61,36 @@ async function initLiff() {
   }
 }
 
-async function init() {
-  const grid = document.getElementById('lb-grid');
+async function init(){
+  await liff.init({liffId:LIFF_ID,withLoginOnExternalBrowser:true});
+  if(!liff.isLoggedIn()){liff.login({redirectUri:location.href});return;}
+  const profile = await liff.getProfile();
   
-  // 1. วาด Skeleton ทันที (เพื่อให้ PC เห็นว่าหน้าเว็บทำงานแล้ว)
-  if (grid) {
-    grid.innerHTML = `
-      <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-      <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-      <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-      <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-    `;
+  // ✅ ดึง room จาก userId เสมอ ไม่อ่านจาก URL
+  const ur = await gas('getUserByLineId',{userId:profile.userId});
+  if(!ur.success||ur.role!=='TENANT'){
+    toast('⚠️ ไม่พบข้อมูลผู้เช่า','error'); return;
   }
-
-  // 2. เรียกใช้ LIFF (PC จะถูกส่งไปหน้า Login ตรงนี้)
-  await initLiff();
-
-  // 3. หลังจาก Login กลับมาแล้ว ถึงจะรันโค้ดส่วนนี้ต่อ
-  const params = new URLSearchParams(window.location.search);
-  const room   = params.get('room');
-
-  if (room) {
-    document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
-    await loadLootBoxForRoom(room);
-  } else if (liffReady && liff.isLoggedIn() && liffProfile) {
-    await loadLootBoxByUserId(liffProfile.userId);
+  room = ur.room;
+  
+  // token อ่านจาก URL ถ้ามี (มาจากกดลิงก์ใน flex)
+  const token = new URLSearchParams(location.search).get('token');
+  if(token){
+    // เปิดกล่องสุ่มจาก token โดยตรง
+    goPage('loot');
+    // โหลดกล่องทั้งหมดของห้องนี้ก่อน แล้วค่อยเปิด token นั้น
+    await loadLoot(true);
+    openLoot(null, token, 'กล่องสุ่มพิเศษ');
   } else {
-    showError('❌ กรุณาเปิดผ่าน LINE ครับ');
+    // เปิดปกติ โหลดข้อมูลทั้งหมด
+    const[d,ci] = await Promise.all([
+      gas('getTenantDashboard',{room}),
+      gas('getCheckinData',{room})
+    ]);
+    if(d.success){dashData=d;renderHome();}
+    if(ci.success){ciData=ci;renderCheckin();}
   }
 }
-
 // ============================================================
 //  LOAD DATA
 // ============================================================
