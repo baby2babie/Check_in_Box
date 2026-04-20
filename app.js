@@ -61,38 +61,27 @@ async function initLiff() {
 async function init() {
   const grid = document.getElementById('lb-grid');
   
-  // 1. [ส่วนเริ่ม] วาด Skeleton ทันทีเพื่อให้หน้าเว็บไม่ขาว (ทั้ง PC และมือถือ)
+  // 1. วาดกล่องเทารอ (Skeleton)
   if (grid) {
-    grid.innerHTML = `
-      <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-      <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-      <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-      <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-    `;
+    grid.innerHTML = `<div class="skeleton-card"></div>`.repeat(4); // วาด 4 กล่องสั้นๆ
   }
 
-  // 2. เรียกใช้ LIFF (บังคับ Login ตามที่คุณต้องการ)
+  // 2. ล็อกอิน LINE (ถ้า Login ค้างบน PC ก็จะผ่านไปเลย)
   await initLiff();
 
-  // 3. [ส่วนที่คุณถาม] การจัดการ Parameter จาก URL
+  // 3. เช็คว่าใน URL มีเลขห้องไหม (เช่น ?room=101)
   const params = new URLSearchParams(window.location.search);
   const room = params.get('room');
-  const token = params.get('token'); // ดึงค่า token ที่ GAS ส่งมา
 
   if (room) {
-    // กรณีระบุเลขห้องตรงๆ (เช่นเอาไว้ให้คุณเช็คงาน)
+    // ถ้ามีเลขห้อง ให้ใช้ฟังก์ชันดึงห้องที่คุณมีอยู่แล้วได้เลย!
     document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
-    await loadLootBoxForRoom(room);
-  } else if (token) {
-    // กรณีเข้าผ่าน Link ที่มี Token (ที่ GAS ส่งให้ลูกหอ)
-    // ระบบจะไปดึงข้อมูลห้องจาก Token นั้นๆ มาแสดง
-    await loadLootBoxByToken(token); 
+    await loadLootBoxForRoom(room); 
   } else if (liffReady && liff.isLoggedIn() && liffProfile) {
-    // กรณีเข้าผ่าน LINE ปกติ
+    // ถ้าไม่มีเลขห้อง แต่ล็อกอิน LINE ไว้ ให้ดึงตาม UserId
     await loadLootBoxByUserId(liffProfile.userId);
   } else {
-    // ถ้าไม่เข้าเงื่อนไขเลย
-    showError('❌ ไม่พบข้อมูลการเข้าถึงครับ');
+    showError('❌ ไม่พบเลขห้อง');
   }
 }
 // ============================================================
