@@ -43,6 +43,21 @@ function showError(msg) {
 // ============================================================
 //  LIFF
 // ============================================================
+async function initLiff() {
+  try {
+    await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true });
+    liffReady = true;
+    if (!liff.isLoggedIn()) {
+      liff.login({ redirectUri: location.href });
+      return;
+    }
+    liffProfile = await liff.getProfile();
+  } catch (e) {
+    console.warn('LIFF init failed:', e);
+    showError('❌ LIFF เริ่มต้นไม่ได้ กรุณาเปิดผ่าน LINE ครับ');
+  }
+}
+
 // ============================================================
 //  INIT (ฉบับอัปเกรด Skeleton Loading)
 // ============================================================
@@ -67,26 +82,6 @@ async function init() {
     document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
     await loadLootBoxForRoom(room);
   } else if (liffReady && liff.isLoggedIn() && liffProfile) {
-    await loadLootBoxByUserId(liffProfile.userId);
-  } else {
-    showError('❌ กรุณาเปิดผ่าน LINE ครับ');
-  }
-}
-// ============================================================
-//  INIT
-// ============================================================
-async function init() {
-  await initLiff();
-
-  const params = new URLSearchParams(window.location.search);
-  const room   = params.get('room');
-
-  if (room) {
-    // เปิดจาก LINE flex ที่มี ?room=xxx
-    document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
-    await loadLootBoxForRoom(room);
-  } else if (liffReady && liff.isLoggedIn() && liffProfile) {
-    // เปิดจาก rich menu — ใช้ LINE userId
     await loadLootBoxByUserId(liffProfile.userId);
   } else {
     showError('❌ กรุณาเปิดผ่าน LINE ครับ');
