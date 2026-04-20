@@ -220,60 +220,66 @@ function closeLootPopup() {
 function getLootIcon(amount) {
   const isBigWin = amount >= 25;
   const isLegend = amount >= 45;
-  const uid = 'premium-coin-' + Math.random().toString(36).substr(2, 9);
+  const uid = 'epic-coin-' + Math.random().toString(36).substr(2, 9);
   
-  // สีทองหลายเฉดเพื่อมิติที่ลึกขึ้น
-  const goldWhite = '#FFFDE7';
+  // สีทองระดับ High-End
+  const goldWhite  = '#FFFFFF';
+  const goldSun    = '#FFD700';
   const goldBright = '#FDE68A';
-  const goldMain = '#FACC15';
-  const goldDeep = '#CA8A04';
-  const goldShadow = '#78350F';
+  const goldMain   = '#FACC15';
+  const goldDeep   = '#B45309';
 
-  // ถ้าเป็นรางวัลใหญ่ ออร่าจะสว่างและกว้างกว่า
-  const auraOpacity = isLegend ? '0.6' : isBigWin ? '0.4' : '0.15';
-  const beamOpacity = isLegend ? '0.4' : isBigWin ? '0.2' : '0';
+  // ตั้งค่าความอลังการ (รัศมีแฉกจะหมุนวนรอบๆ)
+  const rayOpacity = isLegend ? '0.5' : isBigWin ? '0.3' : '0.1';
+  const glowSize   = isLegend ? '60' : isBigWin ? '50' : '40';
 
   return `
   <svg width="140" height="140" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="margin: -10px;">
     <defs>
-      <radialGradient id="${uid}-glow" cx="50%" cy="50%" r="50%">
-        <stop offset="0%"   stop-color="${goldMain}" stop-opacity="${auraOpacity}"/>
-        <stop offset="100%" stop-color="${goldMain}" stop-opacity="0"/>
+      <radialGradient id="${uid}-core" cx="50%" cy="50%" r="50%">
+        <stop offset="20%"  stop-color="${goldWhite}" stop-opacity="0.8"/>
+        <stop offset="100%" stop-color="${goldSun}"   stop-opacity="0"/>
       </radialGradient>
 
-      <linearGradient id="${uid}-shine" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="white" stop-opacity="0.8"/>
-        <stop offset="25%" stop-color="white" stop-opacity="0"/>
-        <stop offset="50%" stop-color="white" stop-opacity="0.2"/>
-        <stop offset="100%" stop-color="white" stop-opacity="0.5"/>
+      <linearGradient id="${uid}-slash" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="45%" stop-color="white" stop-opacity="0"/>
+        <stop offset="50%" stop-color="white" stop-opacity="0.6"/>
+        <stop offset="55%" stop-color="white" stop-opacity="0"/>
       </linearGradient>
 
-      <radialGradient id="${uid}-body" cx="40%" cy="30%" r="70%">
+      <radialGradient id="${uid}-metal" cx="30%" cy="30%" r="70%">
         <stop offset="0%"   stop-color="${goldBright}"/>
-        <stop offset="60%"  stop-color="${goldMain}"/>
+        <stop offset="50%"  stop-color="${goldMain}"/>
         <stop offset="100%" stop-color="${goldDeep}"/>
       </radialGradient>
     </defs>
 
-    <g transform="translate(60,60)" opacity="${beamOpacity}">
-      ${[0, 45, 90, 135, 180, 225, 270, 315].map(deg => `
-        <rect x="-1" y="-60" width="2" height="120" fill="${goldMain}" transform="rotate(${deg})" opacity="0.3"/>
+    <g transform="translate(60,60)" opacity="${rayOpacity}">
+      ${[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(deg => `
+        <polygon points="0,0 -4,-60 4,-60" fill="${goldSun}" transform="rotate(${deg})" opacity="0.4"/>
       `).join('')}
     </g>
 
-    <circle cx="60" cy="60" r="55" fill="url(#${uid}-glow)"/>
+    <circle cx="60" cy="60" r="${glowSize}" fill="url(#${uid}-core)" opacity="0.6"/>
 
-    <circle cx="60" cy="62" r="38" fill="${goldShadow}"/>
+    <circle cx="60" cy="62" r="39" fill="${goldDeep}"/>
     
-    <circle cx="60" cy="60" r="38" fill="url(#${uid}-body)"/>
+    <circle cx="60" cy="60" r="38" fill="url(#${uid}-metal)"/>
     
-    <circle cx="60" cy="60" r="33" fill="none" stroke="${goldShadow}" stroke-width="0.5" opacity="0.3"/>
+    <circle cx="60" cy="60" r="38" fill="url(#${uid}-slash)"/>
     
-    <circle cx="60" cy="60" r="38" fill="url(#${uid}-shine)"/>
+    ${isBigWin ? `
+      <circle cx="35" cy="35" r="2" fill="white">
+        <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="85" cy="45" r="1.5" fill="white">
+        <animate attributeName="opacity" values="0;1;0" dur="1.5s" begin="0.5s" repeatCount="indefinite" />
+      </circle>
+    ` : ''}
 
-    <text x="60" y="73" text-anchor="middle" font-size="40" font-weight="900" 
-          font-family="Arial Black" fill="${goldShadow}" opacity="0.7">฿</text>
-    <text x="60" y="71" text-anchor="middle" font-size="40" font-weight="900" 
+    <text x="60" y="73" text-anchor="middle" font-size="38" font-weight="900" 
+          font-family="Arial Black" fill="${goldDeep}" opacity="0.6">฿</text>
+    <text x="60" y="71" text-anchor="middle" font-size="38" font-weight="900" 
           font-family="Arial Black" fill="${goldWhite}">฿</text>
   </svg>`;
 }
