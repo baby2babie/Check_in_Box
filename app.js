@@ -217,37 +217,69 @@ function closeLootPopup() {
 //  LOOT ICON (coin svg)
 // ============================================================
 function getLootIcon(amount) {
-  const big    = amount >= 30;
-  const medium = amount >= 15;
-  const c1   = big ? '#FFD700' : medium ? '#FACC15' : '#D4A017';
-  const c2   = big ? '#FF8C00' : medium ? '#D97706' : '#92400E';
-  const c3   = big ? '#FFF9C4' : medium ? '#FEF08A' : '#FDE68A';
-  const glow = big ? '#FFD700' : medium ? '#FACC15' : '#D4A017';
-  const uid  = 'coin-' + Math.random().toString(36).substr(2, 9);
+  const isBigWin = amount >= 25;
+  const isLegend = amount >= 45;
+  const uid = 'epic-coin-' + Math.random().toString(36).substr(2, 9);
+  
+  // สีทองระดับ High-End
+  const goldWhite  = '#FFFFFF';
+  const goldSun    = '#FFD700';
+  const goldBright = '#FDE68A';
+  const goldMain   = '#FACC15';
+  const goldDeep   = '#B45309';
+
+  // ตั้งค่าความอลังการ (รัศมีแฉกจะหมุนวนรอบๆ)
+  const rayOpacity = isLegend ? '0.5' : isBigWin ? '0.3' : '0.1';
+  const glowSize   = isLegend ? '60' : isBigWin ? '50' : '40';
 
   return `
-  <svg width="88" height="88" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <svg width="140" height="140" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="margin: -10px;">
     <defs>
-      <radialGradient id="${uid}-coin" cx="35%" cy="28%" r="65%">
-        <stop offset="0%"   stop-color="${c3}"/>
-        <stop offset="55%"  stop-color="${c1}"/>
-        <stop offset="100%" stop-color="${c2}"/>
+      <radialGradient id="${uid}-core" cx="50%" cy="50%" r="50%">
+        <stop offset="20%"  stop-color="${goldWhite}" stop-opacity="0.8"/>
+        <stop offset="100%" stop-color="${goldSun}"   stop-opacity="0"/>
       </radialGradient>
-      <radialGradient id="${uid}-glow" cx="50%" cy="50%" r="50%">
-        <stop offset="0%"   stop-color="${glow}" stop-opacity="0.6"/>
-        <stop offset="100%" stop-color="${glow}" stop-opacity="0"/>
+
+      <linearGradient id="${uid}-slash" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="45%" stop-color="white" stop-opacity="0"/>
+        <stop offset="50%" stop-color="white" stop-opacity="0.6"/>
+        <stop offset="55%" stop-color="white" stop-opacity="0"/>
+      </linearGradient>
+
+      <radialGradient id="${uid}-metal" cx="30%" cy="30%" r="70%">
+        <stop offset="0%"   stop-color="${goldBright}"/>
+        <stop offset="50%"  stop-color="${goldMain}"/>
+        <stop offset="100%" stop-color="${goldDeep}"/>
       </radialGradient>
     </defs>
-    <circle cx="50" cy="50" r="46" fill="url(#${uid}-glow)"/>
-    <ellipse cx="50" cy="92" rx="26" ry="7" fill="rgba(0,0,0,0.35)"/>
-    <circle cx="50" cy="48" r="42" fill="${c2}"/>
-    <circle cx="50" cy="48" r="34" fill="url(#${uid}-coin)"/>
-    <circle cx="50" cy="48" r="32" fill="none" stroke="${c3}" stroke-width="2" opacity="0.7"/>
-    <ellipse cx="42" cy="28" rx="18" ry="8" fill="white" opacity="0.35"/>
-    <text x="50" y="58"
-      text-anchor="middle" font-size="34" font-weight="900"
-      font-family="Arial Black,Arial"
-      fill="${c2}" stroke="${c3}" stroke-width="1.4">฿</text>
+
+    <g transform="translate(60,60)" opacity="${rayOpacity}">
+      ${[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(deg => `
+        <polygon points="0,0 -4,-60 4,-60" fill="${goldSun}" transform="rotate(${deg})" opacity="0.4"/>
+      `).join('')}
+    </g>
+
+    <circle cx="60" cy="60" r="${glowSize}" fill="url(#${uid}-core)" opacity="0.6"/>
+
+    <circle cx="60" cy="62" r="39" fill="${goldDeep}"/>
+    
+    <circle cx="60" cy="60" r="38" fill="url(#${uid}-metal)"/>
+    
+    <circle cx="60" cy="60" r="38" fill="url(#${uid}-slash)"/>
+    
+    ${isBigWin ? `
+      <circle cx="35" cy="35" r="2" fill="white">
+        <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="85" cy="45" r="1.5" fill="white">
+        <animate attributeName="opacity" values="0;1;0" dur="1.5s" begin="0.5s" repeatCount="indefinite" />
+      </circle>
+    ` : ''}
+
+    <text x="60" y="73" text-anchor="middle" font-size="38" font-weight="900" 
+          font-family="Arial Black" fill="${goldDeep}" opacity="0.6">฿</text>
+    <text x="60" y="71" text-anchor="middle" font-size="38" font-weight="900" 
+          font-family="Arial Black" fill="${goldWhite}">฿</text>
   </svg>`;
 }
 
