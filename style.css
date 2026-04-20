@@ -94,7 +94,7 @@ body {
 }
 
 .can-open {
-  animation: glow-box 2s infinite ease-in-out !important;
+  animation: glow-box 4s infinite ease-in-out !important;
   border-width: 2px !important;
   z-index: 10;
 }
