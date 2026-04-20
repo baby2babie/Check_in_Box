@@ -127,7 +127,8 @@ function renderLootGrid(boxes) {
     const card = document.createElement('div');
     card.className = 'lb-card'
       + (isOpened ? ' used'   : '')
-      + (isLocked ? ' locked' : '');
+      + (isLocked ? ' locked' : '')
+    + (hasBox ? ' can-open' : '');
     card.id = 'lb-card-' + cfg.milestone;
 
     card.innerHTML = `
