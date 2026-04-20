@@ -221,3 +221,53 @@ html, body {
   padding: 60px 20px;
   font-size: 16px;
 }
+/* ===== SKELETON LOADING ===== */
+.skeleton-card {
+  background: var(--lb-card);
+  border: 1px solid var(--lb-border);
+  border-radius: 20px;
+  padding: 24px 16px 20px;
+  height: 180px; /* ให้สูงเท่ากับกล่องจริง */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--lb-border);
+  margin-bottom: 14px;
+}
+
+.skeleton-line {
+  width: 70%;
+  height: 12px;
+  background: var(--lb-border);
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.skeleton-line.short { width: 40%; }
+
+/* เอฟเฟกต์แสงวิ่งผ่าน (Shimmer) */
+.skeleton-card::after {
+  content: "";
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.05),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
