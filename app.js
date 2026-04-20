@@ -216,30 +216,36 @@ function closeLootPopup() {
 // ============================================================
 //  LOOT ICON (coin svg)
 // ============================================================
+// แก้ไขในไฟล์ app.js แทนที่ฟังก์ชัน getLootIcon เดิม
 function getLootIcon(amount) {
-  // กำหนดระดับความพรีเมียมตามจำนวนเงิน
-  const isLegend = amount >= 40; // 40 บาทขึ้นไป (กล่องตำนาน)
-  const isHigh   = amount >= 25; // 25 บาทขึ้นไป (กล่องแพลตินัม)
+  // เช็คว่าเป็นรางวัลใหญ่ (25 หรือ 45 บาท)
+  const isBigWin = amount >= 25;
+  const isLegend = amount >= 45;
   
-  // โทนสีทองพรีเมียม (Gold Tones)
-  const goldLight = isLegend ? '#FFF9C4' : '#FEF08A'; // สีเหลืองนวล (แสงสะท้อน)
-  const goldMain  = isLegend ? '#FBBF24' : '#FACC15'; // สีทองหลัก
-  const goldDark  = isLegend ? '#B45309' : '#92400E'; // สีน้ำตาลทอง (เงา)
+  // สีทองระดับพรีเมียม
+  const goldLight = isLegend ? '#FFF9C4' : '#FEF08A';
+  const goldMain  = isLegend ? '#FBBF24' : '#FACC15';
+  const goldDark  = isLegend ? '#B45309' : '#92400E';
   
-  // สีแสงเรือง (Glow Color)
-  const glowColor = isLegend ? '#FBBF24' : '#F59E0B';
-  const glowOpacity = isLegend ? '0.7' : '0.5';
+  // ตั้งค่าออร่า (ถ้าเป็นรางวัลใหญ่ จะฟุ้งกว้างกว่าปกติ)
+  const auraSize = isLegend ? "50" : isBigWin ? "45" : "35";
+  const auraOpacity = isLegend ? "0.8" : isBigWin ? "0.6" : "0.3";
 
   const uid = 'coin-' + Math.random().toString(36).substr(2, 9);
 
   return `
-  <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="margin-left: -10px; margin-top: -10px;">
     <defs>
-      <radialGradient id="${uid}-glow" cx="50%" cy="50%" r="50%">
-        <stop offset="0%"   stop-color="${glowColor}" stop-opacity="${glowOpacity}"/>
-        <stop offset="100%" stop-color="${glowColor}" stop-opacity="0"/>
+      <radialGradient id="${uid}-aura-wide" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="${goldMain}" stop-opacity="${auraOpacity}"/>
+        <stop offset="100%" stop-color="${goldMain}" stop-opacity="0"/>
       </radialGradient>
       
+      <radialGradient id="${uid}-aura-core" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="${goldLight}" stop-opacity="${isBigWin ? '0.9' : '0'}"/>
+        <stop offset="70%"  stop-color="${goldMain}"  stop-opacity="0"/>
+      </radialGradient>
+
       <radialGradient id="${uid}-coin-base" cx="35%" cy="28%" r="65%">
         <stop offset="0%"   stop-color="${goldLight}"/>
         <stop offset="50%"  stop-color="${goldMain}"/>
@@ -247,32 +253,23 @@ function getLootIcon(amount) {
       </radialGradient>
       
       <linearGradient id="${uid}-highlight" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%"   stop-color="white" stop-opacity="0.5"/>
-        <stop offset="30%"  stop-color="white" stop-opacity="0"/>
-        <stop offset="70%"  stop-color="white" stop-opacity="0"/>
-        <stop offset="100%" stop-color="white" stop-opacity="0.3"/>
+        <stop offset="0%"   stop-color="white" stop-opacity="0.6"/>
+        <stop offset="40%"  stop-color="white" stop-opacity="0"/>
+        <stop offset="100%" stop-color="white" stop-opacity="0.4"/>
       </linearGradient>
     </defs>
     
-    <circle cx="50" cy="50" r="48" fill="url(#${uid}-glow)"/>
+    <circle cx="60" cy="60" r="${auraSize}" fill="url(#${uid}-aura-wide)"/>
+    <circle cx="60" cy="60" r="45" fill="url(#${uid}-aura-core)"/>
     
-    <circle cx="50" cy="48" r="42" fill="${goldDark}"/>
+    <circle cx="60" cy="58" r="38" fill="${goldDark}"/>
+    <circle cx="60" cy="58" r="36" fill="url(#${uid}-coin-base)"/>
+    <circle cx="60" cy="58" r="36" fill="url(#${uid}-highlight)"/>
     
-    <circle cx="50" cy="48" r="40" fill="url(#${uid}-coin-base)"/>
-    
-    <circle cx="50" cy="48" r="36" fill="none" stroke="${goldDark}" stroke-width="1" opacity="0.3"/>
-    
-    <circle cx="50" cy="48" r="40" fill="url(#${uid}-highlight)"/>
-    
-    <text x="50" y="60"
-      text-anchor="middle" font-size="38" font-weight="900"
-      font-family="Arial Black,Sarun,sans-serif"
-      fill="${goldDark}" opacity="0.85">฿</text>
-      
-    <text x="50" y="60"
-      text-anchor="middle" font-size="38" font-weight="900"
-      font-family="Arial Black,Sarun,sans-serif"
-      fill="none" stroke="${goldLight}" stroke-width="0.8" opacity="0.5">฿</text>
+    <text x="60" y="70"
+      text-anchor="middle" font-size="34" font-weight="900"
+      font-family="Arial Black, sans-serif"
+      fill="${goldDark}" opacity="0.8">฿</text>
   </svg>`;
 }
 
