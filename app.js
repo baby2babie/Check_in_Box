@@ -58,21 +58,20 @@ async function initLiff() {
   }
 }
 
-// ============================================================
-//  INIT (ฉบับอัปเกรด Skeleton Loading)
-// ============================================================
 async function init() {
   const grid = document.getElementById('lb-grid');
   
-  // 1. แสดง Skeleton 4 กล่องทันทีที่เปิดหน้าเว็บ (ก่อนโหลด LIFF หรือ GAS)
-  grid.innerHTML = `
-    <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-    <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-    <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-    <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-  `;
+  // *** ต้องอยู่บรรทัดแรกสุด ห้ามรอ await ใดๆ ***
+  if (grid) {
+    grid.innerHTML = `
+      <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+      <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+      <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+      <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+    `;
+  }
 
-  // 2. เริ่มทำงานระบบ LIFF
+  // หลังจากวาดกล่องเทาแล้ว ค่อยไปโหลดอย่างอื่นต่อ
   await initLiff();
 
   const params = new URLSearchParams(window.location.search);
