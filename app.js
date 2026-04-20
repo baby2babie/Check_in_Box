@@ -47,29 +47,24 @@ async function initLiff() {
   try {
     await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true });
     liffReady = true;
-
-    // เช็คว่าถ้าไม่ได้ Login และอยู่ใน LINE (หรือต้องการบังคับ Login)
+    
     if (!liff.isLoggedIn()) {
-      // ถ้าเปิดบน PC (External Browser) เราอาจจะไม่บังคับ Login ทันทีเพื่อไม่ให้หน้าขาว
-      if (liff.isInClient()) {
-         liff.login({ redirectUri: location.href });
-         return;
-      } else {
-         console.log("เปิดบน PC: ข้ามการบังคับ Login เพื่อให้แสดงผล Skeleton ได้");
-      }
-    } else {
-      liffProfile = await liff.getProfile();
+      // บังคับกระโดดไปหน้า Login ทันที (ทั้ง PC และมือถือ)
+      liff.login({ redirectUri: location.href });
+      return; 
     }
+    
+    liffProfile = await liff.getProfile();
   } catch (e) {
     console.warn('LIFF init failed:', e);
-    // ไม่ต้อง showError ทันที เพื่อให้ระบบยังไปรัน loadLootBoxByRoom ได้ถ้ามีเลขห้องใน URL
+    showError('❌ LIFF เริ่มต้นไม่ได้ กรุณาเปิดผ่าน LINE ครับ');
   }
 }
 
 async function init() {
   const grid = document.getElementById('lb-grid');
   
-  // *** ต้องอยู่บรรทัดแรกสุด ห้ามรอ await ใดๆ ***
+  // 1. วาด Skeleton ทันที (เพื่อให้ PC เห็นว่าหน้าเว็บทำงานแล้ว)
   if (grid) {
     grid.innerHTML = `
       <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
@@ -79,9 +74,10 @@ async function init() {
     `;
   }
 
-  // หลังจากวาดกล่องเทาแล้ว ค่อยไปโหลดอย่างอื่นต่อ
+  // 2. เรียกใช้ LIFF (PC จะถูกส่งไปหน้า Login ตรงนี้)
   await initLiff();
 
+  // 3. หลังจาก Login กลับมาแล้ว ถึงจะรันโค้ดส่วนนี้ต่อ
   const params = new URLSearchParams(window.location.search);
   const room   = params.get('room');
 
