@@ -86,3 +86,9 @@ body {
   color: white; font-size: 18px; font-weight: 700;
   box-shadow: 0 8px 20px rgba(20, 184, 166, 0.3);
 }
+@keyframes glow-box {
+  0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.2); border-color: var(--lb-border); }
+  50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.8); border-color: var(--lb-gold); }
+  100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.2); border-color: var(--lb-border); }
+}
+.can-open { animation: glow-box 2s infinite ease-in-out !important; }
