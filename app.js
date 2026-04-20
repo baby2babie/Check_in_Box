@@ -58,34 +58,41 @@ async function initLiff() {
   }
 }
 
-async function init(){
-  await liff.init({liffId:LIFF_ID,withLoginOnExternalBrowser:true});
-  if(!liff.isLoggedIn()){liff.login({redirectUri:location.href});return;}
-  const profile = await liff.getProfile();
+async function init() {
+  const grid = document.getElementById('lb-grid');
   
-  // ✅ ดึง room จาก userId เสมอ ไม่อ่านจาก URL
-  const ur = await gas('getUserByLineId',{userId:profile.userId});
-  if(!ur.success||ur.role!=='TENANT'){
-    toast('⚠️ ไม่พบข้อมูลผู้เช่า','error'); return;
+  // 1. [ส่วนเริ่ม] วาด Skeleton ทันทีเพื่อให้หน้าเว็บไม่ขาว (ทั้ง PC และมือถือ)
+  if (grid) {
+    grid.innerHTML = `
+      <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+      <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+      <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+      <div class="skeleton-card"><div class="skeleton-circle"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+    `;
   }
-  room = ur.room;
-  
-  // token อ่านจาก URL ถ้ามี (มาจากกดลิงก์ใน flex)
-  const token = new URLSearchParams(location.search).get('token');
-  if(token){
-    // เปิดกล่องสุ่มจาก token โดยตรง
-    goPage('loot');
-    // โหลดกล่องทั้งหมดของห้องนี้ก่อน แล้วค่อยเปิด token นั้น
-    await loadLoot(true);
-    openLoot(null, token, 'กล่องสุ่มพิเศษ');
+
+  // 2. เรียกใช้ LIFF (บังคับ Login ตามที่คุณต้องการ)
+  await initLiff();
+
+  // 3. [ส่วนที่คุณถาม] การจัดการ Parameter จาก URL
+  const params = new URLSearchParams(window.location.search);
+  const room = params.get('room');
+  const token = params.get('token'); // ดึงค่า token ที่ GAS ส่งมา
+
+  if (room) {
+    // กรณีระบุเลขห้องตรงๆ (เช่นเอาไว้ให้คุณเช็คงาน)
+    document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
+    await loadLootBoxForRoom(room);
+  } else if (token) {
+    // กรณีเข้าผ่าน Link ที่มี Token (ที่ GAS ส่งให้ลูกหอ)
+    // ระบบจะไปดึงข้อมูลห้องจาก Token นั้นๆ มาแสดง
+    await loadLootBoxByToken(token); 
+  } else if (liffReady && liff.isLoggedIn() && liffProfile) {
+    // กรณีเข้าผ่าน LINE ปกติ
+    await loadLootBoxByUserId(liffProfile.userId);
   } else {
-    // เปิดปกติ โหลดข้อมูลทั้งหมด
-    const[d,ci] = await Promise.all([
-      gas('getTenantDashboard',{room}),
-      gas('getCheckinData',{room})
-    ]);
-    if(d.success){dashData=d;renderHome();}
-    if(ci.success){ciData=ci;renderCheckin();}
+    // ถ้าไม่เข้าเงื่อนไขเลย
+    showError('❌ ไม่พบข้อมูลการเข้าถึงครับ');
   }
 }
 // ============================================================
