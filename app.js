@@ -69,21 +69,16 @@ async function init() {
   await initLiff();
 
   const params = new URLSearchParams(window.location.search);
-  const room   = params.get('room');
+  // const room   = params.get('room');
   const token  = params.get('token'); // เพิ่มการรับ Token
 
-  if (room) {
-    document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
-    await loadLootBoxForRoom(room);
-  } else if (token) {
-    // ฟังก์ชันใหม่สำหรับโหลดผ่าน Token บน PC
+  if (token) {
     await loadLootBoxByToken(token); 
   } else if (liffReady && liff.isLoggedIn() && liffProfile) {
     await loadLootBoxByUserId(liffProfile.userId);
   } else {
     showError('❌ ไม่พบข้อมูลห้อง');
   }
-}
 
 // เพิ่มฟังก์ชันดึงข้อมูลจาก Token
 async function loadLootBoxByToken(token) {
