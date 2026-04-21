@@ -76,12 +76,14 @@ async function init() {
     document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
     await loadLootBoxForRoom(room);
   } else if (token) {
+    // ฟังก์ชันใหม่สำหรับโหลดผ่าน Token บน PC
     await loadLootBoxByToken(token); 
   } else if (liffReady && liff.isLoggedIn() && liffProfile) {
     await loadLootBoxByUserId(liffProfile.userId);
   } else {
     showError('❌ ไม่พบข้อมูลห้อง');
   }
+}
 
 // เพิ่มฟังก์ชันดึงข้อมูลจาก Token
 async function loadLootBoxByToken(token) {
