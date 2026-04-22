@@ -222,6 +222,24 @@ html, body {
 .lb-confirm-btn:hover  { opacity: 0.88; }
 .lb-confirm-btn:active { transform: scale(0.97); }
 
+/* Skeleton */
+.lb-skeleton {
+  background: linear-gradient(90deg, #1E293B 25%, #2D3F55 50%, #1E293B 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  border-radius: 24px;
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.lb-card { transition: opacity 0.3s ease; }
+.lb-card.fade-in { animation: fadeInCard 0.4s ease forwards; }
+@keyframes fadeInCard {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ===== CONFETTI ===== */
 .lb-confetti      { position: fixed; inset: 0; pointer-events: none; z-index: 110; display: none; }
 .lb-confetti.show { display: block; }
