@@ -101,15 +101,24 @@ async function init() {
   const room   = params.get('room');
   const token  = params.get('token');
 
-  if (room) {
+  // 1. เช็ค Token ก่อน (เพราะ Token ผูกกับห้องไว้อยู่แล้วในฐานข้อมูล)
+  if (token) {
+    // 🔒 ปลอดภัย: เพราะถึงรู้ Token แต่ถ้า UserId ไม่ตรง (เช็คใน GAS) ก็เปิดไม่ได้
+    await loadLootBoxByToken(token);
+  } 
+  // 2. ถ้าไม่มี Token ให้เช็คจาก UserId ที่ Login อยู่ (ปลอดภัยที่สุด)
+  else if (liffReady && liff.isLoggedIn() && liffProfile) {
+    // 🔒 ปลอดภัยมาก: เพราะปลอม UserId ของ LINE ไม่ได้
+    await loadLootBoxByUserId(liffProfile.userId);
+  } 
+  // 3. เช็คจากเลขห้อง (ควรใช้แค่ตอน Test หรือต้องมีการเช็ค UserId ซ้อนในฟังก์ชันนี้ด้วย)
+  else if (room) {
+    // ⚠️ เสี่ยง: ถ้าฟังก์ชันนี้ไม่ได้เช็ค UserId ซ้อนข้างใน คนจะแก้เลขห้องเพื่อดูของคนอื่นได้
     document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
     await loadLootBoxForRoom(room);
-  } else if (token) {
-    await loadLootBoxByToken(token);
-  } else if (liffReady && liff.isLoggedIn() && liffProfile) {
-    await loadLootBoxByUserId(liffProfile.userId);
-  } else {
-    showError('❌ ไม่พบข้อมูลห้อง');
+  } 
+  else {
+    showError('❌ ไม่พบสิทธิ์ในการเข้าถึงข้อมูล');
   }
 }
 
