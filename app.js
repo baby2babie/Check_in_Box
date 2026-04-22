@@ -64,20 +64,28 @@ async function initLiff() {
 // ============================================================
 async function init() {
   const grid = document.getElementById('lb-grid');
-  if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:#94a3b8;">กำลังโหลดข้อมูล...</div>';
+
+  // ✅ แสดง skeleton 4 ใบก่อน
+  if (grid) {
+    grid.innerHTML = `
+      <div class="lb-skeleton" style="height:180px;"></div>
+      <div class="lb-skeleton" style="height:180px;"></div>
+      <div class="lb-skeleton" style="height:180px;"></div>
+      <div class="lb-skeleton" style="height:180px;"></div>
+    `;
+  }
 
   await initLiff();
 
   const params = new URLSearchParams(window.location.search);
   const room   = params.get('room');
-  const token  = params.get('token'); // เพิ่มการรับ Token
+  const token  = params.get('token');
 
   if (room) {
     document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
     await loadLootBoxForRoom(room);
   } else if (token) {
-    // ฟังก์ชันใหม่สำหรับโหลดผ่าน Token บน PC
-    await loadLootBoxByToken(token); 
+    await loadLootBoxByToken(token);
   } else if (liffReady && liff.isLoggedIn() && liffProfile) {
     await loadLootBoxByUserId(liffProfile.userId);
   } else {
@@ -144,21 +152,21 @@ function renderLootGrid(boxes) {
   const grid = document.getElementById('lb-grid');
   grid.innerHTML = '';
 
-  LB_CONFIG.forEach(cfg => {
+  LB_CONFIG.forEach((cfg, i) => {
     const info     = boxes[cfg.milestone] || {};
-    const hasBox   = info.token && !info.opened; // เงื่อนไข: มีสิทธิ์เปิดและยังไม่ถูกใช้
+    const hasBox   = info.token && !info.opened;
     const isOpened = info.token &&  info.opened;
     const isLocked = !info.token;
 
     const card = document.createElement('div');
-    // เพิ่มเงื่อนไขใส่คลาส can-open ถ้าพร้อมเปิด
     card.className = 'lb-card'
-      + (hasBox   ? ' can-open' : '') 
+      + (hasBox   ? ' can-open' : '')
       + (isOpened ? ' used'     : '')
       + (isLocked ? ' locked'   : '');
-    
+
     card.id = 'lb-card-' + cfg.milestone;
-    card.setAttribute('data-theme', cfg.theme); // ใส่ data-theme เพื่อให้สีไฟกะพริบตรงกับธีม
+    card.setAttribute('data-theme', cfg.theme);
+    card.style.animationDelay = (i * 0.08) + 's'; // ✅ stagger
 
     card.innerHTML = `
       <div class="lb-icon-wrap">
@@ -169,7 +177,7 @@ function renderLootGrid(boxes) {
       </div>
       <div class="lb-name">${cfg.name}</div>
       <div class="lb-desc">${
-        hasBox   ? 'กดเพื่อเปิดกล่อง' : 
+        hasBox   ? 'กดเพื่อเปิดกล่อง' :
         isOpened ? 'เปิดแล้ว' :
         'ยังไม่ถึงรอบ'
       }</div>
@@ -179,10 +187,12 @@ function renderLootGrid(boxes) {
     if (hasBox) {
       card.onclick = () => startLootOpen(cfg.milestone, cfg.name, info.token);
     }
+
+    // ✅ fade-in ทีละใบ
+    setTimeout(() => card.classList.add('fade-in'), i * 80);
     grid.appendChild(card);
   });
 }
-
 // ... ส่วนเปิดกล่อง (startLootOpen) และอื่นๆ คงเดิมตามที่คุณส่งมา ...
 
 function startLootOpen(milestone, name, token) {
