@@ -68,11 +68,11 @@ async function init() {
   // ✅ แสดง skeleton 4 ใบก่อน
   if (grid) {
     grid.innerHTML = `
-      <div class="lb-skeleton" style="height:180px;"></div>
-      <div class="lb-skeleton" style="height:180px;"></div>
-      <div class="lb-skeleton" style="height:180px;"></div>
-      <div class="lb-skeleton" style="height:180px;"></div>
-    `;
+  <div class="lb-card lb-skeleton"></div>
+  <div class="lb-card lb-skeleton"></div>
+  <div class="lb-card lb-skeleton"></div>
+  <div class="lb-card lb-skeleton"></div>
+`;
   }
 
   await initLiff();
