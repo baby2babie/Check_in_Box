@@ -224,7 +224,11 @@ function startLootOpen(milestone, name, token) {
   document.getElementById('lb-popup-title').textContent  = `กำลังเปิด ${name}...`;
   document.getElementById('lb-overlay').classList.add('show');
 
-  callGAS('openLootBox', { token })
+  // ✅ แก้ไข: เพิ่ม userId ส่งไปพร้อมกับ token
+  callGAS('openLootBox', { 
+    token: token, 
+    userId: liffProfile ? liffProfile.userId : null 
+  })
     .then(result => {
       setTimeout(() => {
         if (!result.success) {
