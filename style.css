@@ -75,17 +75,16 @@ html, body {
 .lb-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;  /* เพิ่มบรรทัดนี้ */
   gap: 10px;
   flex: 1;
   min-height: 0;
-  padding-bottom: 10px;
 }
 
 /* ===== CARD ===== */
 .lb-card {
-  background: var(--lb-card);
-  border: 1px solid var(--lb-border);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: var(--r);
   padding: 14px 10px 12px;
   text-align: center;
@@ -99,8 +98,7 @@ html, body {
   overflow: hidden;
   transition: transform 0.18s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   min-height: 0;
-  height: auto;
-  align-self: stretch;
+  min-width: 0;  /* เพิ่มบรรทัดนี้ */
 }
   box-shadow: var(--glow-card);
 }
