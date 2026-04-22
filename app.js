@@ -68,10 +68,30 @@ async function init() {
   // ✅ แสดง skeleton 4 ใบก่อน
   if (grid) {
     grid.innerHTML = `
-  <div class="lb-card lb-skeleton"></div>
-  <div class="lb-card lb-skeleton"></div>
-  <div class="lb-card lb-skeleton"></div>
-  <div class="lb-card lb-skeleton"></div>
+  <div class="lb-card lb-skeleton">
+    <div class="lb-icon-wrap" style="opacity:0"></div>
+    <div class="lb-name" style="opacity:0">กล่องเงิน</div>
+    <div class="lb-desc" style="opacity:0">กดเพื่อเปิดกล่อง</div>
+    <div class="lb-ms" style="opacity:0">ครบ 7 วัน</div>
+  </div>
+  <div class="lb-card lb-skeleton">
+    <div class="lb-icon-wrap" style="opacity:0"></div>
+    <div class="lb-name" style="opacity:0">กล่องทอง</div>
+    <div class="lb-desc" style="opacity:0">กดเพื่อเปิดกล่อง</div>
+    <div class="lb-ms" style="opacity:0">ครบ 14 วัน</div>
+  </div>
+  <div class="lb-card lb-skeleton">
+    <div class="lb-icon-wrap" style="opacity:0"></div>
+    <div class="lb-name" style="opacity:0">กล่องแพลตินัม</div>
+    <div class="lb-desc" style="opacity:0">กดเพื่อเปิดกล่อง</div>
+    <div class="lb-ms" style="opacity:0">ครบ 21 วัน</div>
+  </div>
+  <div class="lb-card lb-skeleton">
+    <div class="lb-icon-wrap" style="opacity:0"></div>
+    <div class="lb-name" style="opacity:0">กล่องตำนาน</div>
+    <div class="lb-desc" style="opacity:0">กดเพื่อเปิดกล่อง</div>
+    <div class="lb-ms" style="opacity:0">ครบ 28 วัน</div>
+  </div>
 `;
   }
 
