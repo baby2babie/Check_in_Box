@@ -64,48 +64,20 @@ async function initLiff() {
 // ============================================================
 async function init() {
   const grid = document.getElementById('lb-grid');
-
-  // ✅ แสดง skeleton 4 ใบก่อน
-  if (grid) {
-    grid.innerHTML = `
-  <div class="lb-card lb-skeleton">
-    <div class="lb-icon-wrap" style="opacity:0"></div>
-    <div class="lb-name" style="opacity:0">กล่องเงิน</div>
-    <div class="lb-desc" style="opacity:0">กดเพื่อเปิดกล่อง</div>
-    <div class="lb-ms" style="opacity:0">ครบ 7 วัน</div>
-  </div>
-  <div class="lb-card lb-skeleton">
-    <div class="lb-icon-wrap" style="opacity:0"></div>
-    <div class="lb-name" style="opacity:0">กล่องทอง</div>
-    <div class="lb-desc" style="opacity:0">กดเพื่อเปิดกล่อง</div>
-    <div class="lb-ms" style="opacity:0">ครบ 14 วัน</div>
-  </div>
-  <div class="lb-card lb-skeleton">
-    <div class="lb-icon-wrap" style="opacity:0"></div>
-    <div class="lb-name" style="opacity:0">กล่องแพลตินัม</div>
-    <div class="lb-desc" style="opacity:0">กดเพื่อเปิดกล่อง</div>
-    <div class="lb-ms" style="opacity:0">ครบ 21 วัน</div>
-  </div>
-  <div class="lb-card lb-skeleton">
-    <div class="lb-icon-wrap" style="opacity:0"></div>
-    <div class="lb-name" style="opacity:0">กล่องตำนาน</div>
-    <div class="lb-desc" style="opacity:0">กดเพื่อเปิดกล่อง</div>
-    <div class="lb-ms" style="opacity:0">ครบ 28 วัน</div>
-  </div>
-`;
-  }
+  if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:#94a3b8;">กำลังโหลดข้อมูล...</div>';
 
   await initLiff();
 
   const params = new URLSearchParams(window.location.search);
   const room   = params.get('room');
-  const token  = params.get('token');
+  const token  = params.get('token'); // เพิ่มการรับ Token
 
   if (room) {
     document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
     await loadLootBoxForRoom(room);
   } else if (token) {
-    await loadLootBoxByToken(token);
+    // ฟังก์ชันใหม่สำหรับโหลดผ่าน Token บน PC
+    await loadLootBoxByToken(token); 
   } else if (liffReady && liff.isLoggedIn() && liffProfile) {
     await loadLootBoxByUserId(liffProfile.userId);
   } else {
@@ -172,21 +144,21 @@ function renderLootGrid(boxes) {
   const grid = document.getElementById('lb-grid');
   grid.innerHTML = '';
 
-  LB_CONFIG.forEach((cfg, i) => {
+  LB_CONFIG.forEach(cfg => {
     const info     = boxes[cfg.milestone] || {};
-    const hasBox   = info.token && !info.opened;
+    const hasBox   = info.token && !info.opened; // เงื่อนไข: มีสิทธิ์เปิดและยังไม่ถูกใช้
     const isOpened = info.token &&  info.opened;
     const isLocked = !info.token;
 
     const card = document.createElement('div');
+    // เพิ่มเงื่อนไขใส่คลาส can-open ถ้าพร้อมเปิด
     card.className = 'lb-card'
-      + (hasBox   ? ' can-open' : '')
+      + (hasBox   ? ' can-open' : '') 
       + (isOpened ? ' used'     : '')
       + (isLocked ? ' locked'   : '');
-
+    
     card.id = 'lb-card-' + cfg.milestone;
-    card.setAttribute('data-theme', cfg.theme);
-    card.style.animationDelay = (i * 0.08) + 's'; // ✅ stagger
+    card.setAttribute('data-theme', cfg.theme); // ใส่ data-theme เพื่อให้สีไฟกะพริบตรงกับธีม
 
     card.innerHTML = `
       <div class="lb-icon-wrap">
@@ -197,7 +169,7 @@ function renderLootGrid(boxes) {
       </div>
       <div class="lb-name">${cfg.name}</div>
       <div class="lb-desc">${
-        hasBox   ? 'กดเพื่อเปิดกล่อง' :
+        hasBox   ? 'กดเพื่อเปิดกล่อง' : 
         isOpened ? 'เปิดแล้ว' :
         'ยังไม่ถึงรอบ'
       }</div>
@@ -207,25 +179,53 @@ function renderLootGrid(boxes) {
     if (hasBox) {
       card.onclick = () => startLootOpen(cfg.milestone, cfg.name, info.token);
     }
-
-    // ✅ fade-in ทีละใบ
-    setTimeout(() => card.classList.add('fade-in'), i * 80);
     grid.appendChild(card);
   });
 }
-// ... ส่วนเปิดกล่อง (startLootOpen) และอื่นๆ คงเดิมตามที่คุณส่งมา ...
 
+// ============================================================
+//  TIER CONFIG
+// ============================================================
+const TIER_CFG = {
+  7:  { key:'silver', title:'กำลังเปิดกล่องเงิน',      orbCount:5,  orbDist:'-52px', confettiCount:50,  confettiColors:['#93D2FF','#E0F4FF','#3A8FBF','#FFF','#AAD8FF'], starEmoji:['❄️','✦','⭐'],              shake:false },
+  14: { key:'gold',   title:'กำลังเปิดกล่องทอง',       orbCount:6,  orbDist:'-56px', confettiCount:80,  confettiColors:['#FFD700','#E9A84C','#FFF176','#FFF','#FFECB3'],  starEmoji:['⭐','✦','✨','💛'],         shake:false },
+  21: { key:'plat',   title:'กำลังเปิดกล่องแพลตินัม',  orbCount:8,  orbDist:'-58px', confettiCount:100, confettiColors:['#A78BFA','#C084FC','#EDD9FF','#FFF','#7C3AED'],  starEmoji:['💜','✦','⭐','✨','💫'],    shake:false },
+  28: { key:'legend', title:'กำลังเปิดกล่องตำนาน',     orbCount:10, orbDist:'-60px', confettiCount:160, confettiColors:['#FF5555','#FF8C00','#FFD700','#FF4444','#FFF'],   starEmoji:['🔥','💥','⭐','✦','👑','💫'], shake:true  },
+};
+
+// ============================================================
+//  OPEN LOOTBOX — Premium Animation
+// ============================================================
 function startLootOpen(milestone, name, token) {
   if (lbOpening) return;
   lbOpening = true;
 
-  document.getElementById('lb-spin-state').style.display = 'block';
+  const cfg = TIER_CFG[milestone] || TIER_CFG[14];
+
+  // set tier class on overlay
+  const overlay = document.getElementById('lb-overlay');
+  overlay.className = 'lb-overlay show tier-' + cfg.key;
+
+  // reset states
+  document.getElementById('lb-spin-state').style.display  = 'block';
+  document.getElementById('lb-spin-state').style.opacity  = '1';
   document.getElementById('lb-result-state').classList.remove('show');
-  document.getElementById('lb-popup-title').textContent  = `กำลังเปิด ${name}...`;
-  document.getElementById('lb-overlay').classList.add('show');
+  document.getElementById('lb-popup-title').textContent   = cfg.title;
+
+  // build orbs
+  _buildOrbs(cfg);
+
+  // legend shake after 1.2s
+  if (cfg.shake) {
+    setTimeout(() => {
+      overlay.classList.add('shaking');
+      setTimeout(() => overlay.classList.remove('shaking'), 400);
+    }, 1200);
+  }
 
   callGAS('openLootBox', { token })
     .then(result => {
+      const delay = cfg.shake ? 2200 : 1800;
       setTimeout(() => {
         if (!result.success) {
           closeLootPopup();
@@ -234,25 +234,42 @@ function startLootOpen(milestone, name, token) {
           return;
         }
 
-        document.getElementById('lb-spin-state').style.display = 'none';
-        document.getElementById('lb-result-icon').innerHTML    = getLootIcon(result.discount_amount);
-        document.getElementById('lb-result-name').textContent  = result.prize_name;
-        document.getElementById('lb-result-amount').textContent = result.discount_amount;
-        document.getElementById('lb-result-state').classList.add('show');
+        // fade out spin
+        const spin = document.getElementById('lb-spin-state');
+        spin.style.transition = 'opacity 0.3s';
+        spin.style.opacity = '0';
 
-        const card = document.getElementById('lb-card-' + milestone);
-        if (card) {
-          card.classList.add('used');
-          card.querySelector('.lb-desc').textContent = 'เปิดแล้ว';
-          card.onclick = null;
-        }
+        setTimeout(() => {
+          spin.style.display = 'none';
 
-        const cur = Number(document.getElementById('lb-count').textContent) || 0;
-        document.getElementById('lb-count').textContent = Math.max(0, cur - 1);
+          // fill result
+          document.getElementById('lb-result-icon').innerHTML     = _buildCoin(cfg.key);
+          document.getElementById('lb-result-name').textContent   = result.prize_name;
+          document.getElementById('lb-result-amount').textContent = result.discount_amount;
+          _buildStars(cfg);
 
-        spawnConfetti();
-        lbOpening = false;
-      }, 2000);
+          document.getElementById('lb-result-state').classList.add('show');
+
+          // update card
+          const card = document.getElementById('lb-card-' + milestone);
+          if (card) {
+            card.classList.remove('can-open');
+            card.classList.add('used');
+            card.querySelector('.lb-desc').textContent = 'เปิดแล้ว';
+            card.onclick = null;
+          }
+
+          const cur = Number(document.getElementById('lb-count').textContent) || 0;
+          document.getElementById('lb-count').textContent = Math.max(0, cur - 1);
+
+          _spawnConfetti(cfg);
+
+          // legend screen flash
+          if (cfg.shake) _legendFlash();
+
+          lbOpening = false;
+        }, 350);
+      }, delay);
     })
     .catch(() => {
       closeLootPopup();
@@ -262,97 +279,95 @@ function startLootOpen(milestone, name, token) {
 }
 
 function closeLootPopup() {
-  document.getElementById('lb-overlay').classList.remove('show');
+  const overlay = document.getElementById('lb-overlay');
+  overlay.classList.remove('show');
+  overlay.className = 'lb-overlay';
   document.getElementById('lb-confetti').classList.remove('show');
   document.getElementById('lb-confetti').innerHTML = '';
   lbOpening = false;
 }
 
-function getLootIcon(amount) {
-  const isBigWin = amount >= 25;
-  const isLegend = amount >= 45;
-  const uid = 'epic-coin-' + Math.random().toString(36).substr(2, 9);
-  
-  // สีทองระดับ High-End
-  const goldWhite  = '#FFFFFF';
-  const goldSun    = '#FFD700';
-  const goldBright = '#FDE68A';
-  const goldMain   = '#FACC15';
-  const goldDeep   = '#B45309';
-
-  // ตั้งค่าความอลังการ (รัศมีแฉกจะหมุนวนรอบๆ)
-  const rayOpacity = isLegend ? '0.5' : isBigWin ? '0.3' : '0.1';
-  const glowSize   = isLegend ? '60' : isBigWin ? '50' : '40';
-
-  return `
-  <svg width="140" height="140" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="margin: -10px;">
-    <defs>
-      <radialGradient id="${uid}-core" cx="50%" cy="50%" r="50%">
-        <stop offset="20%"  stop-color="${goldWhite}" stop-opacity="0.8"/>
-        <stop offset="100%" stop-color="${goldSun}"   stop-opacity="0"/>
-      </radialGradient>
-
-      <linearGradient id="${uid}-slash" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="45%" stop-color="white" stop-opacity="0"/>
-        <stop offset="50%" stop-color="white" stop-opacity="0.6"/>
-        <stop offset="55%" stop-color="white" stop-opacity="0"/>
-      </linearGradient>
-
-      <radialGradient id="${uid}-metal" cx="30%" cy="30%" r="70%">
-        <stop offset="0%"   stop-color="${goldBright}"/>
-        <stop offset="50%"  stop-color="${goldMain}"/>
-        <stop offset="100%" stop-color="${goldDeep}"/>
-      </radialGradient>
-    </defs>
-
-    <g transform="translate(60,60)" opacity="${rayOpacity}">
-      ${[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(deg => `
-        <polygon points="0,0 -4,-60 4,-60" fill="${goldSun}" transform="rotate(${deg})" opacity="0.4"/>
-      `).join('')}
-    </g>
-
-    <circle cx="60" cy="60" r="${glowSize}" fill="url(#${uid}-core)" opacity="0.6"/>
-
-    <circle cx="60" cy="62" r="39" fill="${goldDeep}"/>
-    
-    <circle cx="60" cy="60" r="38" fill="url(#${uid}-metal)"/>
-    
-    <circle cx="60" cy="60" r="38" fill="url(#${uid}-slash)"/>
-    
-    ${isBigWin ? `
-      <circle cx="35" cy="35" r="2" fill="white">
-        <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite" />
-      </circle>
-      <circle cx="85" cy="45" r="1.5" fill="white">
-        <animate attributeName="opacity" values="0;1;0" dur="1.5s" begin="0.5s" repeatCount="indefinite" />
-      </circle>
-    ` : ''}
-
-    <text x="60" y="73" text-anchor="middle" font-size="38" font-weight="900" 
-          font-family="Arial Black" fill="${goldDeep}" opacity="0.6">฿</text>
-    <text x="60" y="71" text-anchor="middle" font-size="38" font-weight="900" 
-          font-family="Arial Black" fill="${goldWhite}">฿</text>
-  </svg>`;
+// ============================================================
+//  HELPERS
+// ============================================================
+function _buildOrbs(cfg) {
+  const orbit = document.getElementById('lb-orbit');
+  if (!orbit) return;
+  orbit.innerHTML = '';
+  for (let i = 0; i < cfg.orbCount; i++) {
+    const angle = (360 / cfg.orbCount) * i;
+    const orb = document.createElement('div');
+    orb.className = 'lb-orb';
+    orb.style.cssText = `--r:${angle}deg;--dist:${cfg.orbDist};--d:${(i*0.1).toFixed(1)}s`;
+    orbit.appendChild(orb);
+    const tail = document.createElement('div');
+    tail.className = 'lb-orb-tail';
+    tail.style.cssText = `--r:${angle}deg;--dist:${cfg.orbDist}`;
+    orbit.appendChild(tail);
+  }
 }
 
-function spawnConfetti() {
-  const wrap   = document.getElementById('lb-confetti');
-  const colors = ['#F59E0B','#14B8A6','#8B5CF6','#EF4444','#10B981','#F472B6'];
+function _buildStars(cfg) {
+  const wrap = document.getElementById('lb-result-stars');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const count = cfg.orbCount + 2;
+  for (let i = 0; i < count; i++) {
+    const angle = (360 / count) * i;
+    const dist  = 55 + Math.random() * 20;
+    const tx = Math.round(Math.cos((angle - 90) * Math.PI / 180) * dist);
+    const ty = Math.round(Math.sin((angle - 90) * Math.PI / 180) * dist);
+    const emoji = cfg.starEmoji[Math.floor(Math.random() * cfg.starEmoji.length)];
+    const sz = (12 + Math.random() * 8).toFixed(0) + 'px';
+    const s = document.createElement('div');
+    s.className = 'lb-star';
+    s.style.cssText = `--tx:${tx}px;--ty:${ty}px;--d:${(Math.random()*0.4).toFixed(2)}s;font-size:${sz}`;
+    s.textContent = emoji;
+    wrap.appendChild(s);
+  }
+}
+
+function _buildCoin(tierKey) {
+  const styles = {
+    silver: { bg:'radial-gradient(circle at 35% 30%,#E8F4FF,#93D2FF 40%,#3A8FBF 80%,#1A5F8A)', border:'#93D2FF', shadow:'0 0 50px rgba(147,210,255,0.7),0 0 100px rgba(147,210,255,0.3)', color:'#0A3A5C' },
+    gold:   { bg:'radial-gradient(circle at 35% 30%,#FFE566,#E9A84C 40%,#B8860B 80%,#8B6310)',  border:'#FFD700', shadow:'0 0 50px rgba(255,215,0,0.7),0 0 100px rgba(233,168,76,0.3)',   color:'#5A3200' },
+    plat:   { bg:'radial-gradient(circle at 35% 30%,#EDD9FF,#A78BFA 40%,#6D28D9 80%,#3B1279)', border:'#C084FC', shadow:'0 0 70px rgba(192,132,252,0.8),0 0 130px rgba(167,139,250,0.3)', color:'#F5EEFF' },
+    legend: { bg:'radial-gradient(circle at 35% 30%,#FFB3B3,#FF5555 40%,#CC0000 80%,#7A0000)', border:'#FF4444', shadow:'0 0 90px rgba(255,68,68,0.9),0 0 160px rgba(255,60,60,0.4)',     color:'#FFE0E0' },
+  };
+  const s = styles[tierKey] || styles.gold;
+  return `<div class="lb-coin lb-coin-${tierKey}" style="background:${s.bg};border-color:${s.border};box-shadow:${s.shadow};color:${s.color}">฿</div>`;
+}
+
+function _spawnConfetti(cfg) {
+  const wrap = document.getElementById('lb-confetti');
   wrap.innerHTML = '';
   wrap.classList.add('show');
-
-  for (let i = 0; i < 60; i++) {
-    const dot = document.createElement('div');
-    dot.className            = 'lb-dot';
-    dot.style.left            = Math.random() * 100 + 'vw';
-    dot.style.background      = colors[Math.floor(Math.random() * colors.length)];
-    dot.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
-    dot.style.animationDelay   = (Math.random() * 0.8) + 's';
-    dot.style.width  = (Math.random() * 8 + 4) + 'px';
-    dot.style.height = (Math.random() * 8 + 4) + 'px';
-    wrap.appendChild(dot);
+  for (let i = 0; i < cfg.confettiCount; i++) {
+    const d = document.createElement('div');
+    d.className = 'lb-dot';
+    const isCircle = Math.random() > 0.4;
+    d.style.cssText = `
+      left:${Math.random()*100}vw;
+      background:${cfg.confettiColors[Math.floor(Math.random()*cfg.confettiColors.length)]};
+      animation-duration:${Math.random()*2+1.2}s;
+      animation-delay:${Math.random()*0.8}s;
+      width:${Math.random()*9+4}px;
+      height:${Math.random()*9+4}px;
+      border-radius:${isCircle?'50%':'2px'};
+    `;
+    wrap.appendChild(d);
   }
-  setTimeout(() => wrap.classList.remove('show'), 4000);
+  setTimeout(() => wrap.classList.remove('show'), 5000);
+}
+
+function _legendFlash() {
+  const flash = document.createElement('div');
+  flash.style.cssText = 'position:fixed;inset:0;background:rgba(255,60,60,0.25);z-index:200;pointer-events:none;transition:opacity 0.5s ease;';
+  document.body.appendChild(flash);
+  requestAnimationFrame(() => {
+    flash.style.opacity = '0';
+    setTimeout(() => flash.remove(), 500);
+  });
 }
 
 init();
