@@ -74,11 +74,11 @@ html, body {
 /* ===== GRID ===== */
 .lb-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px; 
-   padding: 0 14px;
-  max-width: 420px;
-  margin: 0 auto;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  align-content: stretch;
 }
 
 /* ===== CARD ===== */
@@ -87,6 +87,7 @@ html, body {
   border: 1px solid var(--lb-border);
   border-radius: 24px;
   padding: 12px 10px 10px;
+  height: 100%;
   text-align: center;
   cursor: pointer;
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease, box-shadow 0.2s ease;
