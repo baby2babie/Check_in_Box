@@ -5,11 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>กล่องสุ่มรางวัล</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;700&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 <div class="main-container">
   <div class="header">
     <div class="header-title">🎁 กล่องสุ่มรางวัล</div>
@@ -17,83 +15,64 @@
     <div class="header-room" id="lb-room-label">กำลังโหลด...</div>
   </div>
   <div class="count-wrap">
-    <div class="count-badge">🎁 กล่องที่มี: <span id="lb-count">0</span> ใบ</div>
+    <div class="count-badge">
+      🎁 กล่องที่มี: <span id="lb-count">0</span> ใบ
+    </div>
   </div>
   <div class="lb-grid" id="lb-grid">
-    <div class="lb-card lb-skeleton"><div class="lb-icon-wrap" style="opacity:0"></div><div class="lb-name" style="opacity:0">กล่องเงิน</div><div class="lb-desc" style="opacity:0">กดเพื่อเปิดกล่อง</div><div class="lb-ms" style="opacity:0">ครบ 7 วัน</div></div>
-    <div class="lb-card lb-skeleton"><div class="lb-icon-wrap" style="opacity:0"></div><div class="lb-name" style="opacity:0">กล่องทอง</div><div class="lb-desc" style="opacity:0">กดเพื่อเปิดกล่อง</div><div class="lb-ms" style="opacity:0">ครบ 14 วัน</div></div>
-    <div class="lb-card lb-skeleton"><div class="lb-icon-wrap" style="opacity:0"></div><div class="lb-name" style="opacity:0">กล่องแพลตินัม</div><div class="lb-desc" style="opacity:0">กดเพื่อเปิดกล่อง</div><div class="lb-ms" style="opacity:0">ครบ 21 วัน</div></div>
-    <div class="lb-card lb-skeleton"><div class="lb-icon-wrap" style="opacity:0"></div><div class="lb-name" style="opacity:0">กล่องตำนาน</div><div class="lb-desc" style="opacity:0">กดเพื่อเปิดกล่อง</div><div class="lb-ms" style="opacity:0">ครบ 28 วัน</div></div>
+    <div class="loading">กำลังโหลด...</div>
   </div>
   <div class="safe-bottom"></div>
 </div>
 
-<!-- Premium Popup -->
+<!-- Popup -->
 <div class="lb-overlay" id="lb-overlay">
-  <div class="lb-popup">
+  <div class="lb-popup" id="lb-popup">
 
-    <!-- bg rays -->
-    <div class="lb-rays">
-      <div class="lb-ray" style="--r:0deg;--d:0s"></div>
-      <div class="lb-ray" style="--r:22.5deg;--d:0.1s"></div>
-      <div class="lb-ray" style="--r:45deg;--d:0.2s"></div>
-      <div class="lb-ray" style="--r:67.5deg;--d:0.3s"></div>
-      <div class="lb-ray" style="--r:90deg;--d:0.4s"></div>
-      <div class="lb-ray" style="--r:112.5deg;--d:0.5s"></div>
-      <div class="lb-ray" style="--r:135deg;--d:0.6s"></div>
-      <div class="lb-ray" style="--r:157.5deg;--d:0.7s"></div>
-      <div class="lb-ray" style="--r:180deg;--d:0s"></div>
-      <div class="lb-ray" style="--r:202.5deg;--d:0.1s"></div>
-      <div class="lb-ray" style="--r:225deg;--d:0.2s"></div>
-      <div class="lb-ray" style="--r:247.5deg;--d:0.3s"></div>
-      <div class="lb-ray" style="--r:270deg;--d:0.4s"></div>
-      <div class="lb-ray" style="--r:292.5deg;--d:0.5s"></div>
-      <div class="lb-ray" style="--r:315deg;--d:0.6s"></div>
-      <div class="lb-ray" style="--r:337.5deg;--d:0.7s"></div>
-    </div>
+    <!-- Floor glow decoration -->
+    <div class="popup-floor-glow"></div>
 
-    <!-- Spin state -->
+    <!-- PHASE 1: SPINNING -->
     <div id="lb-spin-state">
-      <div class="lb-spin-wrap">
-        <div class="lb-ring lb-ring-1"></div>
-        <div class="lb-ring lb-ring-2"></div>
-        <div class="lb-ring lb-ring-3"></div>
-        <div class="lb-ring lb-ring-4"></div>
-        <div class="lb-ring lb-ring-5"></div>
-        <div class="lb-orbit" id="lb-orbit"></div>
-        <div class="lb-box-icon">🎁</div>
+      <div class="spin-energy-ring"></div>
+      <div class="lb-spin-wrap" id="lb-spin-wrap">
+        <div class="lb-spin-ring"></div>
+        <div class="spin-ring-inner"></div>
+        <div class="lb-spin-icon" id="lb-spin-icon">🎁</div>
+        <!-- sparks injected by JS -->
       </div>
-      <div class="lb-popup-title" id="lb-popup-title">กำลังเปิดกล่อง</div>
-      <div class="lb-popup-sub">รอสักครู่นะครับ</div>
-      <div class="lb-dots">
-        <div class="lb-dot-anim"></div>
-        <div class="lb-dot-anim"></div>
-        <div class="lb-dot-anim"></div>
+      <div class="lb-popup-title" id="lb-popup-title">กำลังเปิดกล่อง...</div>
+      <div class="lb-popup-sub">รอสักครู่นะครับ ✨</div>
+      <div class="spin-dots">
+        <div class="spin-dot"></div>
+        <div class="spin-dot"></div>
+        <div class="spin-dot"></div>
       </div>
     </div>
 
-    <!-- Result state -->
+    <!-- PHASE 2: RESULT -->
     <div class="lb-result" id="lb-result-state">
-      <div class="lb-result-icon" id="lb-result-icon">
-        <div class="lb-coin-wrap">
-          <div id="lb-coin"></div>
-          <div id="lb-result-stars"></div>
-        </div>
-      </div>
-      <div class="lb-result-label">ยินดีด้วย!</div>
-      <div class="lb-result-congrats" id="lb-result-congrats">คุณได้รับ</div>
+      <div class="lb-result-icon" id="lb-result-icon">🎉</div>
+      <div class="lb-result-congrats">ยินดีด้วย! 🎉</div>
       <div class="lb-result-name" id="lb-result-name"></div>
-      <div class="lb-result-amount" id="lb-result-amount">0</div>
-      <div class="lb-result-unit">บาท ลดจากบิลเดือนนี้</div>
+      <div class="lb-result-amount-wrap">
+        <div class="lb-result-amount" id="lb-result-amount">0</div>
+      </div>
+      <div class="lb-result-unit">บาท</div>
+      <div class="lb-result-note">✨ ลดจากบิลเดือนนี้</div>
       <button class="lb-confirm-btn" onclick="closeLootPopup()">รับรางวัล 🎊</button>
     </div>
 
   </div>
 </div>
 
-<div class="lb-confetti" id="lb-confetti"></div>
-<div class="toast" id="toast"></div>
+<!-- Particle canvas -->
+<canvas id="lb-particle-canvas"></canvas>
 
+<!-- Confetti -->
+<div class="lb-confetti" id="lb-confetti"></div>
+
+<div class="toast" id="toast"></div>
 <script src="app.js"></script>
 </body>
 </html>
