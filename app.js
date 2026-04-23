@@ -372,9 +372,34 @@ function spawnResultStars() {
 // ============================================================
 //  MAIN: START LOOT OPEN — cinematic sequence
 // ============================================================
+// tier color map
+const TIER_COLORS = {
+  gold:   { main:'#E9A84C', dim:'rgba(233,168,76,.3)',  glow:'rgba(233,168,76,.3)'  },
+  teal:   { main:'#38BFA1', dim:'rgba(56,191,161,.3)',  glow:'rgba(56,191,161,.3)'  },
+  purple: { main:'#9B7EE8', dim:'rgba(155,126,232,.3)', glow:'rgba(155,126,232,.3)' },
+  red:    { main:'#E86060', dim:'rgba(232,96,96,.3)',   glow:'rgba(232,96,96,.3)'   },
+};
+const TIER_CONFETTI = {
+  gold:   ['#E9A84C','#FFD700','#FFF176','#fff','#F59E0B'],
+  teal:   ['#38BFA1','#6ee7b7','#a7f3d0','#fff','#0d9488'],
+  purple: ['#9B7EE8','#c4b5fd','#ddd6fe','#fff','#7c3aed'],
+  red:    ['#E86060','#fca5a5','#fecaca','#fff','#b91c1c'],
+};
+
 function startLootOpen(milestone, name, token) {
   if (lbOpening) return;
   lbOpening = true;
+
+  // หา theme จาก config
+  const cfg  = LB_CONFIG.find(c => c.milestone === milestone) || {};
+  const tier = cfg.theme || 'gold';
+  const tc   = TIER_COLORS[tier];
+
+  // ตั้งสี ring-2 (วงใน) ตาม tier
+  const popup = document.getElementById('lb-popup');
+  popup.style.setProperty('--ring-inner',     tc.main);
+  popup.style.setProperty('--ring-inner-dim', tc.dim);
+  popup.style.setProperty('--ring-inner-glow',tc.glow);
 
   // --- Phase 0: ring burst + overlay open ---
   const card = document.getElementById('lb-card-' + milestone);
@@ -436,9 +461,13 @@ function startLootOpen(milestone, name, token) {
           document.getElementById('lb-spin-state').style.display = 'none';
 
           // fill result data
-          document.getElementById('lb-result-icon').innerHTML    = getLootIcon(result.discount_amount);
+          document.getElementById('lb-result-icon').innerHTML    = getBahtBadge(tier);
           document.getElementById('lb-result-name').textContent  = result.prize_name || name;
-          document.getElementById('lb-result-amount').textContent = '';
+          const amtEl = document.getElementById('lb-result-amount');
+          amtEl.textContent = '';
+          // ล้าง tier class เก่า แล้วใส่ใหม่
+          ['tier-gold','tier-teal','tier-purple','tier-red'].forEach(c => amtEl.classList.remove(c));
+          amtEl.classList.add('tier-' + tier);
 
           document.getElementById('lb-result-state').classList.add('show');
 
@@ -512,56 +541,29 @@ function closeLootPopup() {
 }
 
 // ============================================================
-//  LOOT ICON (SVG coin) — unchanged from original
+//  BADGE ฿ ICON — สีตาม tier
 // ============================================================
-function getLootIcon(amount) {
-  const isBigWin = amount >= 25;
-  const isLegend = amount >= 45;
-  const uid = 'epic-coin-' + Math.random().toString(36).substr(2, 9);
+function getBahtBadge(tier) {
+  const cols = TIER_CONFETTI[tier] || TIER_CONFETTI.gold;
 
-  const goldWhite  = '#FFFFFF';
-  const goldSun    = '#FFD700';
-  const goldBright = '#FDE68A';
-  const goldMain   = '#FACC15';
-  const goldDeep   = '#B45309';
-
-  const rayOpacity = isLegend ? '0.5' : isBigWin ? '0.3' : '0.1';
-  const glowSize   = isLegend ? '60' : isBigWin ? '50' : '40';
+  // สร้าง spark elements หลัง inject
+  const sparksHtml = Array.from({length:10}, (_,i) => {
+    const sz  = 3 + Math.random() * 4;
+    const r   = 46 + Math.random() * 10;
+    const dur = (1.6 + Math.random() * .8).toFixed(2);
+    const del = -(Math.random() * 2).toFixed(2);
+    const col = cols[i % cols.length];
+    return `<div class="baht-spark" style="width:${sz}px;height:${sz}px;margin-left:${-sz/2}px;margin-top:${-sz/2}px;background:${col};box-shadow:0 0 5px 2px ${col};--a:${36*i}deg;--r:${r}px;animation-duration:${dur}s;animation-delay:${del}s"></div>`;
+  }).join('');
 
   return `
-  <svg width="140" height="140" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="margin: -10px;">
-    <defs>
-      <radialGradient id="${uid}-core" cx="50%" cy="50%" r="50%">
-        <stop offset="20%"  stop-color="${goldWhite}" stop-opacity="0.8"/>
-        <stop offset="100%" stop-color="${goldSun}"   stop-opacity="0"/>
-      </radialGradient>
-      <linearGradient id="${uid}-slash" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="45%" stop-color="white" stop-opacity="0"/>
-        <stop offset="50%" stop-color="white" stop-opacity="0.6"/>
-        <stop offset="55%" stop-color="white" stop-opacity="0"/>
-      </linearGradient>
-      <radialGradient id="${uid}-metal" cx="30%" cy="30%" r="70%">
-        <stop offset="0%"   stop-color="${goldBright}"/>
-        <stop offset="50%"  stop-color="${goldMain}"/>
-        <stop offset="100%" stop-color="${goldDeep}"/>
-      </radialGradient>
-    </defs>
-    <g transform="translate(60,60)" opacity="${rayOpacity}">
-      ${[0,30,60,90,120,150,180,210,240,270,300,330].map(deg =>
-        `<polygon points="0,0 -4,-60 4,-60" fill="${goldSun}" transform="rotate(${deg})" opacity="0.4"/>`
-      ).join('')}
-    </g>
-    <circle cx="60" cy="60" r="${glowSize}" fill="url(#${uid}-core)" opacity="0.6"/>
-    <circle cx="60" cy="62" r="39" fill="${goldDeep}"/>
-    <circle cx="60" cy="60" r="38" fill="url(#${uid}-metal)"/>
-    <circle cx="60" cy="60" r="38" fill="url(#${uid}-slash)"/>
-    ${isBigWin ? `
-      <circle cx="35" cy="35" r="2" fill="white"><animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite"/></circle>
-      <circle cx="85" cy="45" r="1.5" fill="white"><animate attributeName="opacity" values="0;1;0" dur="1.5s" begin="0.5s" repeatCount="indefinite"/></circle>
-    ` : ''}
-    <text x="60" y="73" text-anchor="middle" font-size="38" font-weight="900" font-family="Arial Black" fill="${goldDeep}" opacity="0.6">฿</text>
-    <text x="60" y="71" text-anchor="middle" font-size="38" font-weight="900" font-family="Arial Black" fill="${goldWhite}">฿</text>
-  </svg>`;
+    <div style="position:relative;display:flex;align-items:center;justify-content:center;width:90px;height:90px;">
+      <div class="baht-halo tier-${tier}"></div>
+      <div class="baht-badge tier-${tier}">
+        <div class="baht-badge-text">฿</div>
+        ${sparksHtml}
+      </div>
+    </div>`;
 }
 
 // ============================================================
