@@ -523,81 +523,40 @@ function closeLootPopup() {
 }
 
 // ============================================================
-//  BADGE ICON — เหรียญทอง 3D มีตัว ฿ กลาง + sparks วงรอบเดิม
+//  RESULT ICON — Hexagon SVG สีตาม tier (แทน ฿ badge)
 // ============================================================
 function getBahtBadge(tier) {
-  const cols = TIER_CONFETTI[tier] || TIER_CONFETTI.gold;
+  const tierMap = {
+    gold:   { fill:'#F59E0B', glow:'rgba(245,158,11,0.55)',  inner:'#FFF7ED', emoji:'💰' },
+    teal:   { fill:'#10B981', glow:'rgba(16,185,129,0.55)',  inner:'#ECFDF5', emoji:'🌿' },
+    purple: { fill:'#8B5CF6', glow:'rgba(139,92,246,0.55)',  inner:'#F5F3FF', emoji:'💎' },
+    red:    { fill:'#EF4444', glow:'rgba(239,68,68,0.55)',   inner:'#FFF1F2', emoji:'🔥' },
+  };
+  const t = tierMap[tier] || tierMap.gold;
 
+  const cols = TIER_CONFETTI[tier] || TIER_CONFETTI.gold;
   const sparksHtml = Array.from({length:10}, (_,i) => {
     const sz  = 3 + Math.random() * 4;
-    const r   = 46 + Math.random() * 10;
+    const r   = 54 + Math.random() * 12;
     const dur = (1.6 + Math.random() * .8).toFixed(2);
     const del = -(Math.random() * 2).toFixed(2);
     const col = cols[i % cols.length];
     return `<div class="baht-spark" style="width:${sz}px;height:${sz}px;margin-left:${-sz/2}px;margin-top:${-sz/2}px;background:${col};box-shadow:0 0 5px 2px ${col};--a:${36*i}deg;--r:${r}px;animation-duration:${dur}s;animation-delay:${del}s"></div>`;
   }).join('');
 
+  // rays หมุนช้า
+  const raysHtml = Array.from({length:8}, (_,i) =>
+    `<div style="position:absolute;top:50%;left:50%;width:2px;height:50px;margin-left:-1px;margin-top:0;background:linear-gradient(to bottom,${t.fill}66,transparent);transform-origin:top center;transform:rotate(${i*45}deg);border-radius:1px;"></div>`
+  ).join('');
+
   return `
-    <div style="position:relative;display:flex;align-items:center;justify-content:center;width:90px;height:90px;">
+    <div style="position:relative;display:flex;align-items:center;justify-content:center;width:110px;height:110px;">
       <div class="baht-halo tier-${tier}"></div>
-
-      <!-- เหรียญทอง 3D SVG -->
-      <div class="baht-badge tier-${tier}" style="background:none;border:none;box-shadow:none;overflow:visible;">
-        <svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;filter:drop-shadow(0 6px 18px rgba(180,120,0,0.7)) drop-shadow(0 2px 6px rgba(0,0,0,0.5));">
-          <defs>
-            <radialGradient id="coinFace" cx="38%" cy="32%" r="65%">
-              <stop offset="0%"   stop-color="#FFF9C4"/>
-              <stop offset="18%"  stop-color="#FFE566"/>
-              <stop offset="45%"  stop-color="#F5B800"/>
-              <stop offset="72%"  stop-color="#D48F00"/>
-              <stop offset="100%" stop-color="#A06200"/>
-            </radialGradient>
-            <radialGradient id="coinFaceHover" cx="38%" cy="32%" r="65%">
-              <stop offset="0%"   stop-color="#FFFFFF"/>
-              <stop offset="15%"  stop-color="#FFF0A0"/>
-              <stop offset="40%"  stop-color="#FFD700"/>
-              <stop offset="100%" stop-color="#B8860B"/>
-            </radialGradient>
-            <linearGradient id="coinEdge" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%"   stop-color="#C8860A"/>
-              <stop offset="30%"  stop-color="#A06200"/>
-              <stop offset="60%"  stop-color="#7A4800"/>
-              <stop offset="100%" stop-color="#5A3000"/>
-            </linearGradient>
-            <linearGradient id="coinShine" x1="20%" y1="0%" x2="80%" y2="100%">
-              <stop offset="0%"   stop-color="#FFFFFF" stop-opacity="0.55"/>
-              <stop offset="40%"  stop-color="#FFFFFF" stop-opacity="0.08"/>
-              <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
-            </linearGradient>
-            <filter id="coinInnerShadow" x="-10%" y="-10%" width="120%" height="120%">
-              <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#00000044"/>
-            </filter>
-          </defs>
-
-          <!-- edge/thickness — ให้ดูเหมือน 3D -->
-          <ellipse cx="45" cy="51" rx="36" ry="8" fill="url(#coinEdge)"/>
-
-          <!-- coin face -->
-          <ellipse cx="45" cy="43" rx="36" ry="36" fill="url(#coinFace)"/>
-
-          <!-- ridge ring ขอบเหรียญ -->
-          <ellipse cx="45" cy="43" rx="36" ry="36" fill="none" stroke="#C8860A" stroke-width="2.5" opacity="0.6"/>
-          <ellipse cx="45" cy="43" rx="31" ry="31" fill="none" stroke="#FFD700" stroke-width="0.8" opacity="0.5"/>
-
-          <!-- ตัว ฿ ตรงกลาง -->
-          <text x="45" y="52" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="28" font-weight="900"
-                fill="#7A4800" opacity="0.25" transform="translate(1.5,1.5)">฿</text>
-          <text x="45" y="52" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="28" font-weight="900"
-                fill="url(#coinFaceHover)">฿</text>
-
-          <!-- แสงสะท้อน highlight -->
-          <ellipse cx="38" cy="28" rx="14" ry="9" fill="url(#coinShine)" transform="rotate(-20,38,28)"/>
-
-          <!-- แสงวาบเล็กๆ มุมซ้ายบน -->
-          <circle cx="28" cy="24" r="3.5" fill="#FFFFFF" opacity="0.45"/>
-          <circle cx="28" cy="24" r="1.5" fill="#FFFFFF" opacity="0.9"/>
-        </svg>
-
+      <!-- rotating rays -->
+      <div style="position:absolute;inset:0;animation:rotateSlow 8s linear infinite;">${raysHtml}</div>
+      <!-- hexagon -->
+      <div class="baht-badge tier-${tier}" style="clip-path:polygon(50% 0%,95% 25%,95% 75%,50% 100%,5% 75%,5% 25%);border-radius:0;width:88px;height:88px;">
+        <div class="baht-badge-text" style="font-size:34px;font-family:inherit;">${t.emoji}</div>
         ${sparksHtml}
       </div>
     </div>`;
