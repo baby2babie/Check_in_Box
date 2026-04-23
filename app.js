@@ -297,26 +297,35 @@ function stopParticleCanvas() {
 }
 
 // ============================================================
-//  SPARKS inside spin wrap
+//  SPIN WRAP — Crystal Orb + CSS micro sparks (ไม่มี orbit ring)
 // ============================================================
 function injectSpinSparks() {
-  const wrap  = document.getElementById('lb-spin-wrap');
-  const count = 8;
-  // remove old
-  wrap.querySelectorAll('.spark').forEach(s => s.remove());
-  for (let i = 0; i < count; i++) {
-    const spark = document.createElement('div');
-    spark.className = 'spark';
-    const angle = (360 / count) * i;
-    spark.style.setProperty('--start-angle', angle + 'deg');
-    spark.style.left = '50%'; spark.style.top = '50%';
-    spark.style.marginLeft = '-2px'; spark.style.marginTop = '-2px';
-    spark.style.animationDuration = (1.2 + Math.random() * 0.8) + 's';
-    spark.style.animationDelay    = -(Math.random() * 1.5) + 's';
-    const colors = ['var(--gold)', 'var(--teal)', '#fff', 'var(--purple)'];
-    spark.style.background = colors[i % colors.length];
-    wrap.appendChild(spark);
-  }
+  const wrap = document.getElementById('lb-spin-wrap');
+
+  // ใส่ orb core
+  const icon = document.getElementById('lb-spin-icon');
+  icon.innerHTML = '<div class="orb-crystal"></div>';
+
+  // sparks CSS-only รอบ orb
+  wrap.querySelectorAll('.orb-sparks').forEach(s => s.remove());
+  const sparkWrap = document.createElement('div');
+  sparkWrap.className = 'orb-sparks';
+
+  const sparkData = [
+    { sx:'55px', sy:'4px',  dx:'8px',  dy:'-22px', color:'#c4b5fd', dur:'2.1s', del:'0s'   },
+    { sx:'90px', sy:'35px', dx:'18px', dy:'-10px', color:'#fbbf24', dur:'2.5s', del:'0.4s' },
+    { sx:'88px', sy:'72px', dx:'12px', dy:'14px',  color:'#f0abfc', dur:'1.9s', del:'0.8s' },
+    { sx:'55px', sy:'100px',dx:'0px',  dy:'20px',  color:'#c4b5fd', dur:'2.3s', del:'1.2s' },
+    { sx:'8px',  sy:'72px', dx:'-16px',dy:'10px',  color:'#fbbf24', dur:'2.0s', del:'1.6s' },
+    { sx:'6px',  sy:'35px', dx:'-14px',dy:'-12px', color:'#a5f3fc', dur:'2.6s', del:'0.2s' },
+  ];
+  sparkData.forEach(d => {
+    const s = document.createElement('div');
+    s.className = 'orb-spark';
+    s.style.cssText = `--sx:${d.sx};--sy:${d.sy};--dx:${d.dx};--dy:${d.dy};background:${d.color};box-shadow:0 0 5px 2px ${d.color};animation-duration:${d.dur};animation-delay:-${d.del};`;
+    sparkWrap.appendChild(s);
+  });
+  wrap.appendChild(sparkWrap);
 }
 
 // ============================================================
@@ -414,34 +423,15 @@ function startLootOpen(milestone, name, token) {
   document.getElementById('lb-popup-title').textContent = `กำลังเปิด ${name}...`;
   document.getElementById('lb-overlay').classList.add('show');
 
-  // inject sparks & start canvas particles
+  // inject orb sparks & start canvas particles
   setTimeout(() => {
     injectSpinSparks();
     initParticleCanvas();
   }, 100);
 
-  // escalate spin speed visually over 2s
-  const spinIcon = document.getElementById('lb-spin-icon');
-  const spinRing = document.querySelector('.lb-spin-ring');
-  let   speedStep = 0;
-  const speedInterval = setInterval(() => {
-    speedStep++;
-    if (spinRing) {
-      const dur = Math.max(0.15, 0.7 - speedStep * 0.1);
-      spinRing.style.animationDuration = dur + 's';
-    }
-    if (spinIcon) {
-      const wobbleDur = Math.max(0.15, 0.5 - speedStep * 0.05);
-      spinIcon.style.animationDuration = wobbleDur + 's';
-    }
-    if (speedStep >= 5) clearInterval(speedInterval);
-  }, 300);
-
   // --- API call ---
   callGAS('openLootBox', { token })
     .then(result => {
-      clearInterval(speedInterval);
-
       setTimeout(() => {
         if (!result.success) {
           stopParticleCanvas();
@@ -497,7 +487,6 @@ function startLootOpen(milestone, name, token) {
       }, 2200);
     })
     .catch(() => {
-      clearInterval(speedInterval);
       stopParticleCanvas();
       closeLootPopup();
       showToast('❌ เกิดข้อผิดพลาด กรุณาลองใหม่ครับ', 'error');
@@ -530,23 +519,15 @@ function closeLootPopup() {
   document.getElementById('lb-confetti').classList.remove('show');
   document.getElementById('lb-confetti').innerHTML = '';
   stopParticleCanvas();
-
-  // reset spin ring speed
-  const spinRing = document.querySelector('.lb-spin-ring');
-  const spinIcon = document.getElementById('lb-spin-icon');
-  if (spinRing) spinRing.style.animationDuration = '';
-  if (spinIcon) spinIcon.style.animationDuration = '';
-
   lbOpening = false;
 }
 
 // ============================================================
-//  BADGE ฿ ICON — สีตาม tier
+//  BADGE ICON — เหรียญทอง 3D มีตัว ฿ กลาง + sparks วงรอบเดิม
 // ============================================================
 function getBahtBadge(tier) {
   const cols = TIER_CONFETTI[tier] || TIER_CONFETTI.gold;
 
-  // สร้าง spark elements หลัง inject
   const sparksHtml = Array.from({length:10}, (_,i) => {
     const sz  = 3 + Math.random() * 4;
     const r   = 46 + Math.random() * 10;
@@ -559,8 +540,64 @@ function getBahtBadge(tier) {
   return `
     <div style="position:relative;display:flex;align-items:center;justify-content:center;width:90px;height:90px;">
       <div class="baht-halo tier-${tier}"></div>
-      <div class="baht-badge tier-${tier}">
-        <div class="baht-badge-text">฿</div>
+
+      <!-- เหรียญทอง 3D SVG -->
+      <div class="baht-badge tier-${tier}" style="background:none;border:none;box-shadow:none;overflow:visible;">
+        <svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;filter:drop-shadow(0 6px 18px rgba(180,120,0,0.7)) drop-shadow(0 2px 6px rgba(0,0,0,0.5));">
+          <defs>
+            <radialGradient id="coinFace" cx="38%" cy="32%" r="65%">
+              <stop offset="0%"   stop-color="#FFF9C4"/>
+              <stop offset="18%"  stop-color="#FFE566"/>
+              <stop offset="45%"  stop-color="#F5B800"/>
+              <stop offset="72%"  stop-color="#D48F00"/>
+              <stop offset="100%" stop-color="#A06200"/>
+            </radialGradient>
+            <radialGradient id="coinFaceHover" cx="38%" cy="32%" r="65%">
+              <stop offset="0%"   stop-color="#FFFFFF"/>
+              <stop offset="15%"  stop-color="#FFF0A0"/>
+              <stop offset="40%"  stop-color="#FFD700"/>
+              <stop offset="100%" stop-color="#B8860B"/>
+            </radialGradient>
+            <linearGradient id="coinEdge" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%"   stop-color="#C8860A"/>
+              <stop offset="30%"  stop-color="#A06200"/>
+              <stop offset="60%"  stop-color="#7A4800"/>
+              <stop offset="100%" stop-color="#5A3000"/>
+            </linearGradient>
+            <linearGradient id="coinShine" x1="20%" y1="0%" x2="80%" y2="100%">
+              <stop offset="0%"   stop-color="#FFFFFF" stop-opacity="0.55"/>
+              <stop offset="40%"  stop-color="#FFFFFF" stop-opacity="0.08"/>
+              <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+            </linearGradient>
+            <filter id="coinInnerShadow" x="-10%" y="-10%" width="120%" height="120%">
+              <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#00000044"/>
+            </filter>
+          </defs>
+
+          <!-- edge/thickness — ให้ดูเหมือน 3D -->
+          <ellipse cx="45" cy="51" rx="36" ry="8" fill="url(#coinEdge)"/>
+
+          <!-- coin face -->
+          <ellipse cx="45" cy="43" rx="36" ry="36" fill="url(#coinFace)"/>
+
+          <!-- ridge ring ขอบเหรียญ -->
+          <ellipse cx="45" cy="43" rx="36" ry="36" fill="none" stroke="#C8860A" stroke-width="2.5" opacity="0.6"/>
+          <ellipse cx="45" cy="43" rx="31" ry="31" fill="none" stroke="#FFD700" stroke-width="0.8" opacity="0.5"/>
+
+          <!-- ตัว ฿ ตรงกลาง -->
+          <text x="45" y="52" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="28" font-weight="900"
+                fill="#7A4800" opacity="0.25" transform="translate(1.5,1.5)">฿</text>
+          <text x="45" y="52" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="28" font-weight="900"
+                fill="url(#coinFaceHover)">฿</text>
+
+          <!-- แสงสะท้อน highlight -->
+          <ellipse cx="38" cy="28" rx="14" ry="9" fill="url(#coinShine)" transform="rotate(-20,38,28)"/>
+
+          <!-- แสงวาบเล็กๆ มุมซ้ายบน -->
+          <circle cx="28" cy="24" r="3.5" fill="#FFFFFF" opacity="0.45"/>
+          <circle cx="28" cy="24" r="1.5" fill="#FFFFFF" opacity="0.9"/>
+        </svg>
+
         ${sparksHtml}
       </div>
     </div>`;
