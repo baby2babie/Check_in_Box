@@ -135,15 +135,29 @@ html, body {
   margin-top: 8px; display: inline-block;
 }
 
-/* skeleton */
+/* skeleton — ขนาดเท่า card จริง */
 .lb-skeleton {
   background: linear-gradient(90deg,#1E293B 25%,#2D3F55 50%,#1E293B 75%);
   background-size: 200% 100%;
   animation: shimmer 1.2s infinite;
+  min-height: 164px;
 }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 .lb-card.fade-in { animation: fadeInCard 0.4s ease forwards; }
 @keyframes fadeInCard { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* used — เปิดแล้ว */
+.lb-card.used   { opacity: 0.38; cursor: not-allowed; filter: grayscale(1); }
+
+/* locked — ยังไม่ถึงรอบ สีเทาคล้าย used แต่ดู inactive ชัดกว่า */
+.lb-card.locked {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(1) brightness(0.7);
+  border-style: dashed;
+  border-color: rgba(255,255,255,.08) !important;
+  box-shadow: none !important;
+}
 
 /* ===== FLASH ===== */
 .flash {
