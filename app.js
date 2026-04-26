@@ -124,7 +124,7 @@ async function init() {
 
   // skeleton
   grid.innerHTML = LB_CONFIG.map(() => `
-    <div class="lb-card lb-skeleton" style="height:140px"></div>
+    <div class="lb-card lb-skeleton"></div>
   `).join('');
 
   await initLiff();
