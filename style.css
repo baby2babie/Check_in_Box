@@ -356,3 +356,19 @@ html, body {
 
 /* safe bottom */
 .safe-bottom { flex-shrink: 0; height: max(10px, env(safe-area-inset-bottom)); }
+
+/* badge PAID */
+.ms-paid {
+  background: rgba(56,191,161,.15);
+  color: #38BFA1;
+  font-size: 10px; font-weight: 700;
+  padding: 3px 10px; border-radius: 99px;
+  display: inline-block; margin-top: 8px;
+}
+
+/* glow animation PAID */
+@keyframes glow-paid {
+  0%,100% { box-shadow: 0 0 8px rgba(56,191,161,.2); border-color: rgba(56,191,161,.2); }
+  50%     { box-shadow: 0 0 20px rgba(56,191,161,.6); border-color: rgba(56,191,161,.5); }
+}
+.lb-card.can-open[data-tier="paid"] { animation: glow-paid 2.5s infinite ease-in-out; }
