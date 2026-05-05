@@ -185,7 +185,9 @@ function renderLootGrid(boxes) {
   grid.innerHTML = '';
 
   LB_CONFIG.forEach((cfg, i) => {
-    const info     = boxes[cfg.milestone] || {};
+    const key  = cfg.milestone;
+    // ✅ แก้จาก boxes[cfg.milestone] → boxes[key] รองรับทั้ง string และ number
+    const info     = boxes[key] || {};
     const hasBox   = info.token && !info.opened;
     const isOpened = info.token &&  info.opened;
     const isLocked = !info.token;
@@ -195,22 +197,25 @@ function renderLootGrid(boxes) {
       + (hasBox   ? ' can-open' : '')
       + (isOpened ? ' used'     : '')
       + (isLocked ? ' locked'   : '');
-    card.id = 'lb-card-' + cfg.milestone;
+    card.id = 'lb-card-' + key;
     card.setAttribute('data-tier', cfg.tier);
     card.style.setProperty('--t-color', TIER_CFG[cfg.tier].color);
+
+    const subLabel  = key === 'PAID' ? 'จ่ายตรงเวลา'        : `ครบ ${key} วัน`;
+    const lockedMsg = key === 'PAID' ? 'จ่ายตรงเวลาเพื่อรับ' : 'ยังไม่ถึงรอบ';
 
     card.innerHTML = `
       <span class="lb-card-icon">🎁</span>
       <div class="lb-card-name">${cfg.name.toUpperCase()}</div>
       <div class="lb-card-sub">${
         hasBox   ? 'กดเพื่อเปิดกล่อง' :
-        isOpened ? 'เปิดแล้ว' : 'ยังไม่ถึงรอบ'
+        isOpened ? 'เปิดแล้ว'         : lockedMsg
       }</div>
-      <div class="lb-card-ms ${cfg.ms}">ครบ ${cfg.milestone} วัน</div>
+      <div class="lb-card-ms ${cfg.ms}">${subLabel}</div>
     `;
 
     if (hasBox) {
-      card.onclick = () => startLootOpen(cfg.milestone, cfg.name, cfg.tier, info.token);
+      card.onclick = () => startLootOpen(key, cfg.name, cfg.tier, info.token);
     }
 
     setTimeout(() => card.classList.add('fade-in'), i * 80);
