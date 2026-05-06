@@ -7,7 +7,7 @@ const LIFF_ID = '2004478373-pUgVSZTj';
 
 // กล่อง 4 ใบ — เหมือนกันหมด ต่างที่ milestone + tier
 const LB_CONFIG = [
-  { milestone: 7,  name: 'กล่องเงิน',     tier: 'silver', ms: 'ms-silver' },
+  { milestone: 7,  name: 'กล่อง Paid',     tier: 'silver', ms: 'ms-silver' },
   { milestone: 14, name: 'กล่องทอง',      tier: 'gold',   ms: 'ms-gold'   },
   { milestone: 21, name: 'กล่องแพลตินัม', tier: 'plat',   ms: 'ms-plat'   },
   { milestone: 28, name: 'กล่องตำนาน',    tier: 'legend', ms: 'ms-legend' },
@@ -183,36 +183,36 @@ function renderPage(result) {
 function renderLootGrid(boxes) {
   const grid = document.getElementById('lb-grid');
   grid.innerHTML = '';
-
   LB_CONFIG.forEach((cfg, i) => {
-    const info     = boxes[cfg.milestone] || {};
+    const key      = cfg.milestone;                // ✅ เพิ่ม
+    const info     = boxes[key] || {};
     const hasBox   = info.token && !info.opened;
     const isOpened = info.token &&  info.opened;
     const isLocked = !info.token;
+
+    const lockedMsg = key === 7 ? 'จ่ายตรงเวลาเพื่อรับ' : 'ยังไม่ถึงรอบ';  // ✅ เพิ่ม
+    const subLabel  = key === 7 ? 'จ่ายตรงเวลา'         : `ครบ ${key} วัน`; // ✅ เพิ่ม
 
     const card = document.createElement('div');
     card.className = 'lb-card'
       + (hasBox   ? ' can-open' : '')
       + (isOpened ? ' used'     : '')
       + (isLocked ? ' locked'   : '');
-    card.id = 'lb-card-' + cfg.milestone;
+    card.id = 'lb-card-' + key;
     card.setAttribute('data-tier', cfg.tier);
     card.style.setProperty('--t-color', TIER_CFG[cfg.tier].color);
-
     card.innerHTML = `
       <span class="lb-card-icon">🎁</span>
       <div class="lb-card-name">${cfg.name.toUpperCase()}</div>
       <div class="lb-card-sub">${
         hasBox   ? 'กดเพื่อเปิดกล่อง' :
-        isOpened ? 'เปิดแล้ว' : 'ยังไม่ถึงรอบ'
+        isOpened ? 'เปิดแล้ว' : lockedMsg   // ✅ เปลี่ยน
       }</div>
-      <div class="lb-card-ms ${cfg.ms}">ครบ ${cfg.milestone} วัน</div>
+      <div class="lb-card-ms ${cfg.ms}">${subLabel}</div>  <!-- ✅ เปลี่ยน -->
     `;
-
     if (hasBox) {
-      card.onclick = () => startLootOpen(cfg.milestone, cfg.name, cfg.tier, info.token);
+      card.onclick = () => startLootOpen(key, cfg.name, cfg.tier, info.token);
     }
-
     setTimeout(() => card.classList.add('fade-in'), i * 80);
     grid.appendChild(card);
   });
