@@ -183,11 +183,13 @@ function renderPage(result) {
 function renderLootGrid(boxes) {
   const grid = document.getElementById('lb-grid');
   grid.innerHTML = '';
+
   LB_CONFIG.forEach((cfg, i) => {
     const info     = boxes[cfg.milestone] || {};
     const hasBox   = info.token && !info.opened;
     const isOpened = info.token &&  info.opened;
     const isLocked = !info.token;
+
     const card = document.createElement('div');
     card.className = 'lb-card'
       + (hasBox   ? ' can-open' : '')
@@ -196,7 +198,8 @@ function renderLootGrid(boxes) {
     card.id = 'lb-card-' + cfg.milestone;
     card.setAttribute('data-tier', cfg.tier);
     card.style.setProperty('--t-color', TIER_CFG[cfg.tier].color);
-    card.innerHTML = 
+
+    card.innerHTML = `
       <span class="lb-card-icon">🎁</span>
       <div class="lb-card-name">${cfg.name.toUpperCase()}</div>
       <div class="lb-card-sub">${
@@ -204,15 +207,16 @@ function renderLootGrid(boxes) {
         isOpened ? 'เปิดแล้ว' : 'ยังไม่ถึงรอบ'
       }</div>
       <div class="lb-card-ms ${cfg.ms}">ครบ ${cfg.milestone} วัน</div>
-    ;
+    `;
+
     if (hasBox) {
       card.onclick = () => startLootOpen(cfg.milestone, cfg.name, cfg.tier, info.token);
     }
+
     setTimeout(() => card.classList.add('fade-in'), i * 80);
     grid.appendChild(card);
   });
 }
-
 // ============================================================
 //  SOLAR SYSTEM HTML
 // ============================================================
