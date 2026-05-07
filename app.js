@@ -369,7 +369,12 @@ function startLootOpen(milestone, name, tier, token) {
   setTimeout(() => boxIcon.classList.add('box-tension'), 100);
 
   if (cfg.glitch) {
-    ['err1','err2','err3'].forEach(id => document.getElementById(id).classList.add('show'));
+    const errColor = tier === 'paid' ? '#C084FC' : '#ff0033';
+    ['err1','err2','err3'].forEach(id => {
+      const el = document.getElementById(id);
+      el.style.color = errColor;
+      el.classList.add('show');
+    });
     setTimeout(() => boxIcon.classList.add('box-glitch'), 1600);
   }
 
