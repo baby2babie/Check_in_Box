@@ -371,7 +371,7 @@ html, body {
   75%  { box-shadow: 0 0 20px #FCA5A5, 0 0 40px #FCA5A544; border-color: #FCA5A5; }
   100% { box-shadow: 0 0 20px #E879F9, 0 0 40px #E879F944; border-color: #E879F9; }
 }
-.lb-card.can-open[data-tier="paid"] { animation: rainbowGlow 3s ease-in-out infinite !important; }
+.lb-card.can-open[data-tier="paid"] { animation: rainbowGlow 8s ease-in-out infinite !important; }
 /* PAID — float wobble */
 @keyframes paidFloat {
   0%   { transform: translateY(0)    rotate(0deg)   scale(1);    filter: drop-shadow(0 0 8px  #C084FC); }
