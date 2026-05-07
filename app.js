@@ -369,6 +369,7 @@ function startLootOpen(milestone, name, tier, token) {
   setTimeout(() => boxIcon.classList.add('box-tension'), 100);
 
   if (cfg.glitch) {
+    // ✅ set สี error text ตาม tier
     const errColor = tier === 'paid' ? '#C084FC' : '#ff0033';
     ['err1','err2','err3'].forEach(id => {
       const el = document.getElementById(id);
@@ -377,7 +378,6 @@ function startLootOpen(milestone, name, tier, token) {
     });
     setTimeout(() => boxIcon.classList.add('box-glitch'), 1600);
   }
-
   callGAS('openLootBox', { token })
     .then(result => {
       const waitTime = cfg.glitch ? 3600 : 2700;
