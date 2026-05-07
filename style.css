@@ -369,3 +369,13 @@ html, body {
   50%     { box-shadow: 0 0 20px rgba(56,191,161,.6); border-color: rgba(56,191,161,.5); }
 }
 .lb-card.can-open[data-tier="paid"] { animation: glow-paid 2.5s infinite ease-in-out; }
+/* PAID — float wobble */
+@keyframes paidFloat {
+  0%   { transform: translateY(0)    rotate(0deg)   scale(1);    filter: drop-shadow(0 0 8px  #C084FC); }
+  20%  { transform: translateY(-8px) rotate(-2deg)  scale(1.05); filter: drop-shadow(0 0 16px #E879F9); }
+  40%  { transform: translateY(-4px) rotate(2deg)   scale(1.10); filter: drop-shadow(0 0 24px #C084FC) brightness(1.2); }
+  60%  { transform: translateY(-12px)rotate(-1.5deg)scale(1.18); filter: drop-shadow(0 0 40px #E879F9) brightness(1.5); }
+  80%  { transform: translateY(-6px) rotate(2deg)   scale(1.28); filter: drop-shadow(0 0 60px #C084FC) brightness(1.8); }
+  100% { transform: scale(0);                                     opacity: 0; }
+}
+.box-paid-tension { animation: paidFloat var(--tension-dur, 3.0s) forwards; }
