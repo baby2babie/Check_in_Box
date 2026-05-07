@@ -13,6 +13,20 @@ const LB_CONFIG = [
 ];
 
 const TIER_CFG = {
+  paid: {
+  color: '#C084FC', label: 'PAID BONUS',
+  shakeClass: 'shake-hard', tensionDur: '3.0s', glitch: true,
+  ringCol: 'rgba(192,132,252,.3)',
+  orbits: [
+    { r:53, dur:1.8, planets:[{col:'#E879F9',sz:6,start:0},{col:'#A5F3FC',sz:4,start:180}] },
+    { r:80, dur:2.8, planets:[{col:'#C084FC',sz:8,start:60},{col:'#FCA5A5',sz:5,start:200},{col:'#A5F3FC',sz:4,start:320}] },
+    { r:103,dur:4.2, planets:[{col:'#E879F9',sz:10,start:90},{col:'#C084FC',sz:5,start:210},{col:'#FCA5A5',sz:4,start:330}] },
+  ],
+  badge:{ bg:'linear-gradient(145deg,#1e0a2e,#120618)', border:'rgba(232,121,249,.4)', glow:'rgba(192,132,252,.35)' },
+  badgeGrad: 'linear-gradient(160deg,#fdf4ff,#E879F9 45%,#7e22ce)',
+  btn:{ bg:'linear-gradient(135deg,#E879F9 0%,#A855F7 100%)', color:'#1a0030', glow:'rgba(232,121,249,.5)' },
+  confetti: ['#E879F9','#C084FC','#A5F3FC','#FCA5A5','#fff','#F0ABFC'],
+},
   silver: {
     color: '#94A3B8', label: 'SILVER RANK',
     shakeClass: 'shake-soft', tensionDur: '2.6s', glitch: false,
