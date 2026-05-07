@@ -364,11 +364,14 @@ html, body {
   display: inline-block; margin-top: 8px;
 }
 
-@keyframes glow-paid {
-  0%,100% { box-shadow: 0 0 8px rgba(56,191,161,.2); border-color: rgba(56,191,161,.2); }
-  50%     { box-shadow: 0 0 20px rgba(56,191,161,.6); border-color: rgba(56,191,161,.5); }
+@keyframes rainbowGlow {
+  0%   { box-shadow: 0 0 20px #E879F9, 0 0 40px #E879F944; border-color: #E879F9; }
+  25%  { box-shadow: 0 0 20px #A5F3FC, 0 0 40px #A5F3FC44; border-color: #A5F3FC; }
+  50%  { box-shadow: 0 0 20px #C084FC, 0 0 40px #C084FC44; border-color: #C084FC; }
+  75%  { box-shadow: 0 0 20px #FCA5A5, 0 0 40px #FCA5A544; border-color: #FCA5A5; }
+  100% { box-shadow: 0 0 20px #E879F9, 0 0 40px #E879F944; border-color: #E879F9; }
 }
-.lb-card.can-open[data-tier="paid"] { animation: glow-paid 2.5s infinite ease-in-out; }
+.lb-card.can-open[data-tier="paid"] { animation: rainbowGlow 3s ease-in-out infinite !important; }
 /* PAID — float wobble */
 @keyframes paidFloat {
   0%   { transform: translateY(0)    rotate(0deg)   scale(1);    filter: drop-shadow(0 0 8px  #C084FC); }
