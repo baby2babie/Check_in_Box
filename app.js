@@ -177,7 +177,7 @@ async function initPaidPage(roomNo) {
   // แก้ grid เป็น single card
   const grid = document.getElementById('lb-grid');
   grid.style.cssText = 'display:flex;justify-content:center;width:90%;max-width:380px';
-  grid.innerHTML = `<div class="lb-card lb-skeleton" style="width:100%;min-height:200px"></div>`;
+  grid.innerHTML = `<div class="lb-card lb-skeleton" style="width:100%;height:290px"></div>`;
 
   if (!roomNo) { showError('❌ ไม่พบข้อมูลห้อง'); return; }
 
