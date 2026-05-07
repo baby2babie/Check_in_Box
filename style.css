@@ -379,3 +379,64 @@ html, body {
   100% { transform: scale(0);                                     opacity: 0; }
 }
 .box-paid-tension { animation: paidFloat var(--tension-dur, 3.0s) forwards; }
+/* ===== STARDUST — PAID BOX ===== */
+@keyframes floatBox {
+  0%,100% { transform: translateY(0)    rotate(-1deg); }
+  50%      { transform: translateY(-12px) rotate(1deg);  }
+}
+@keyframes paidReveal {
+  from { opacity:0; transform: scale(.4) translateY(20px); filter: blur(8px); }
+  to   { opacity:1; transform: scale(1)  translateY(0);    filter: blur(0);   }
+}
+@keyframes paidAmount {
+  from { opacity:0; transform: scale(.3); }
+  to   { opacity:1; transform: scale(1);  }
+}
+
+.paid-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 100;
+  background: #020617;
+  align-items: center; justify-content: center;
+  flex-direction: column;
+}
+.paid-overlay.active { display: flex; }
+
+#paid-canvas {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 101;
+}
+
+.paid-box-icon {
+  position: relative; z-index: 102;
+  width: 100px; height: 100px;
+  border-radius: 20px;
+  background: radial-gradient(circle at 35% 35%, #1e0a2e, #120618);
+  border: 2px solid #C084FC;
+  box-shadow: 0 0 24px #C084FC88, 0 0 50px #C084FC44;
+  font-size: 48px;
+  display: flex; align-items: center; justify-content: center;
+  animation: floatBox 2.5s ease-in-out infinite;
+  cursor: default;
+}
+
+.paid-result {
+  display: none; z-index: 102;
+  flex-direction: column; align-items: center;
+  text-align: center; padding: 0 32px;
+  animation: paidReveal .8s cubic-bezier(.17,.89,.32,1.4) forwards;
+}
+.paid-result.show { display: flex; }
+
+.paid-prize-val {
+  font-family: 'Cinzel', serif;
+  font-size: 80px; font-weight: 900; line-height: 1;
+  background: linear-gradient(160deg, #fdf4ff, #E879F9 45%, #7e22ce);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 20px #C084FC);
+  opacity: 0; transform: scale(.3);
+  animation: paidAmount .7s cubic-bezier(.175,.885,.32,1.275) forwards .4s;
+}
+.paid-prize-label { color: #C084FC; font-size: 13px; letter-spacing: 3px; margin-top: 8px; font-family: 'Orbitron', monospace; }
+.paid-prize-note  { font-size: 12px; color: #475569; margin-top: 4px; margin-bottom: 28px; }
+.paid-res-tier    { font-family: 'Orbitron', monospace; font-size: 11px; letter-spacing: 2px; color: #C084FC; margin-bottom: 8px; }
