@@ -352,6 +352,12 @@ function startLootOpen(milestone, name, tier, token) {
   if (lbOpening) return;
   lbOpening = true;
 
+  // ✅ PAID ใช้ stardust overlay แยก
+  if (tier === 'paid') {
+    startStardustOpen(token);
+    return;
+  }
+
   const cfg     = TIER_CFG[tier];
   const overlay = document.getElementById('lb-overlay');
   const flash   = document.getElementById('flash');
@@ -493,7 +499,233 @@ function spawnConfettiStop() {
   w.classList.remove('show');
   w.innerHTML = '';
 }
+// ============================================================
+//  STARDUST — PAID BOX
+// ============================================================
+let starParticles = [];
+let starAnimId    = null;
+let starPhase     = 'idle';
+let starExplodeT  = 0;
+let starGatherT   = 0;
 
+const STAR_COLORS = ['#E879F9','#C084FC','#A5F3FC','#FCA5A5','#F0ABFC','#fff','#DDD6FE'];
+
+function randomStarColor() {
+  return STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)];
+}
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function createStarParticles(cx, cy) {
+  starParticles = [];
+  for (let i = 0; i < 120; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 2 + Math.random() * 5;
+    starParticles.push({
+      x: cx, y: cy,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - Math.random() * 3,
+      size: 2 + Math.random() * 4,
+      color: randomStarColor(),
+      alpha: 1,
+      orbitR: 60 + Math.random() * 80,
+      orbitSpeed: (Math.random() > .5 ? 1 : -1) * (.02 + Math.random() * .04),
+      orbitAngle: angle,
+      twinkle: Math.random() * Math.PI * 2
+    });
+  }
+}
+
+function startStardustOpen(token) {
+  const overlay = document.getElementById('paid-overlay');
+  const canvas  = document.getElementById('paid-canvas');
+  const boxIcon = document.getElementById('paid-box-icon');
+
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const cx = canvas.width  / 2;
+  const cy = canvas.height / 2;
+
+  overlay.classList.add('active');
+  document.getElementById('paid-result').classList.remove('show');
+  boxIcon.style.display = 'flex';
+
+  starPhase     = 'explode';
+  starExplodeT  = 0;
+  starGatherT   = 0;
+  createStarParticles(cx, cy);
+
+  // ซ่อนกล่องแล้วเริ่ม animate
+  setTimeout(() => {
+    boxIcon.style.animation = 'none';
+    boxIcon.style.transform = 'scale(0)';
+  }, 300);
+
+  // เรียก API พร้อมกัน
+  const apiPromise = callGAS('openLootBox', { token });
+
+  const ctx = canvas.getContext('2d');
+  function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (starPhase === 'explode') {
+      starExplodeT++;
+      starParticles.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        p.vy += 0.08; p.vx *= 0.98;
+        p.twinkle += 0.1;
+        const a = .6 + .4 * Math.sin(p.twinkle);
+        drawStar(ctx, p, a);
+      });
+      if (starExplodeT > 60) { starPhase = 'orbit'; starGatherT = 0; }
+    }
+
+    else if (starPhase === 'orbit') {
+      starGatherT++;
+      starParticles.forEach(p => {
+        p.orbitAngle += p.orbitSpeed * 1.5;
+        p.x = lerp(p.x, cx + Math.cos(p.orbitAngle) * p.orbitR, .08);
+        p.y = lerp(p.y, cy + Math.sin(p.orbitAngle) * p.orbitR, .08);
+        p.twinkle += 0.12;
+        drawStar(ctx, p, .5 + .5 * Math.sin(p.twinkle));
+      });
+      if (starGatherT > 80) { starPhase = 'gather'; starGatherT = 0; }
+    }
+
+    else if (starPhase === 'gather') {
+      starGatherT++;
+      const progress = Math.min(starGatherT / 60, 1);
+      const eased    = 1 - Math.pow(1 - progress, 3);
+
+      starParticles.forEach(p => {
+        p.orbitAngle += p.orbitSpeed * (1 + progress * 4);
+        const tx = cx + Math.cos(p.orbitAngle) * p.orbitR * (1 - eased);
+        const ty = cy + Math.sin(p.orbitAngle) * p.orbitR * (1 - eased);
+        p.x = lerp(p.x, tx, .1);
+        p.y = lerp(p.y, ty, .1);
+        p.size = Math.max(.5, p.size * (1 - eased * .02));
+        p.twinkle += .15;
+        drawStar(ctx, p, Math.max(0, (1 - eased) * (.6 + .4 * Math.sin(p.twinkle))));
+      });
+
+      if (progress > .8) {
+        const fa = (progress - .8) / .2 * .6;
+        ctx.save();
+        ctx.globalAlpha = fa;
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 100);
+        grad.addColorStop(0, '#E879F9');
+        grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 100, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      if (progress >= 1) {
+        starPhase = 'done';
+        apiPromise.then(result => {
+          if (!result.success) {
+            closePaidOverlay();
+            showToast('❌ ' + (result.message || 'เกิดข้อผิดพลาด'), 'error');
+            lbOpening = false;
+            return;
+          }
+          showStardustResult(result, canvas, cx, cy);
+        }).catch(() => {
+          closePaidOverlay();
+          showToast('❌ เกิดข้อผิดพลาด', 'error');
+          lbOpening = false;
+        });
+        return;
+      }
+    }
+
+    starAnimId = requestAnimationFrame(loop);
+  }
+
+  loop();
+}
+
+function drawStar(ctx, p, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle   = p.color;
+  ctx.shadowColor = p.color;
+  ctx.shadowBlur  = 8;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function showStardustResult(result, canvas, cx, cy) {
+  const resultEl = document.getElementById('paid-result');
+  const valEl    = document.getElementById('paid-prize-val');
+
+  valEl.style.animation = 'none';
+  valEl.textContent = '0';
+  void valEl.offsetWidth;
+  valEl.style.animation = '';
+
+  resultEl.classList.add('show');
+
+  // update card
+  const card = document.getElementById('lb-card-PAID');
+  if (card) {
+    card.classList.remove('can-open');
+    card.classList.add('used');
+    card.querySelector('.lb-card-sub').textContent = 'เปิดแล้วเดือนนี้';
+    card.querySelector('.lb-card-icon').textContent = '🎁';
+    card.onclick = null;
+  }
+
+  setTimeout(() => {
+    countUp(valEl, result.discount_amount, 1800);
+    spawnStarConfetti(canvas, cx, cy);
+  }, 300);
+
+  lbOpening = false;
+}
+
+function spawnStarConfetti(canvas, cx, cy) {
+  const ctx = canvas.getContext('2d');
+  let drops = [];
+  for (let i = 0; i < 80; i++) {
+    drops.push({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 100,
+      vx: (Math.random() - .5) * 2,
+      vy: 1.5 + Math.random() * 2.5,
+      size: 2 + Math.random() * 5,
+      color: randomStarColor(),
+      alpha: 1
+    });
+  }
+  function fall() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drops = drops.filter(p => p.alpha > .05);
+    drops.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.alpha -= .006;
+      drawStar(ctx, p, p.alpha);
+    });
+    if (drops.length) requestAnimationFrame(fall);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  fall();
+}
+
+function closePaidOverlay() {
+  const overlay = document.getElementById('paid-overlay');
+  overlay.classList.remove('active');
+  const canvas = document.getElementById('paid-canvas');
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  if (starAnimId) { cancelAnimationFrame(starAnimId); starAnimId = null; }
+  starPhase = 'idle';
+  document.getElementById('paid-box-icon').style.cssText = '';
+  document.getElementById('paid-result').classList.remove('show');
+  lbOpening = false;
+}
 // ============================================================
 //  START
 // ============================================================
