@@ -5,15 +5,13 @@
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbx57fi00n2RKu7b5jHu67vzUVwrez1cx6RhW0lvvM9cIkt6_amJzMoVJOJvrwD7imHBnA/exec';
 const LIFF_ID = '2004478373-pUgVSZTj';
 
-// กล่อง 4 ใบ — เหมือนกันหมด ต่างที่ milestone + tier
 const LB_CONFIG = [
-  { milestone: 7,  name: 'กล่อง เงิน',     tier: 'silver', ms: 'ms-silver' },
-  { milestone: 14, name: 'กล่องทอง',      tier: 'gold',   ms: 'ms-gold'   },
-  { milestone: 21, name: 'กล่องแพลตินัม', tier: 'plat',   ms: 'ms-plat'   },
-  { milestone: 28, name: 'กล่องตำนาน',    tier: 'legend', ms: 'ms-legend' },
+  { milestone: 7,  name: 'กล่องเงิน',      tier: 'silver', ms: 'ms-silver' },
+  { milestone: 14, name: 'กล่องทอง',        tier: 'gold',   ms: 'ms-gold'   },
+  { milestone: 21, name: 'กล่องแพลตินัม',   tier: 'plat',   ms: 'ms-plat'   },
+  { milestone: 28, name: 'กล่องตำนาน',      tier: 'legend', ms: 'ms-legend' },
 ];
 
-// tier config — สี / animation / badge / button
 const TIER_CFG = {
   silver: {
     color: '#94A3B8', label: 'SILVER RANK',
@@ -71,6 +69,21 @@ const TIER_CFG = {
     btn:{ bg:'linear-gradient(135deg,#EF4444 0%,#7F1D1D 100%)', color:'#FFF1F2', glow:'rgba(239,68,68,.6)' },
     confetti: ['#FF5555','#FF8C00','#FCA5A5','#fff','#EF4444'],
   },
+  // ✅ เพิ่ม paid tier
+  paid: {
+    color: '#38BFA1', label: 'PAID BONUS',
+    shakeClass: 'shake-mid', tensionDur: '2.8s', glitch: false,
+    ringCol: 'rgba(56,191,161,.3)',
+    orbits: [
+      { r:53, dur:2.0, planets:[{col:'#38BFA1',sz:6,start:0},{col:'#A7F3D0',sz:4,start:180}] },
+      { r:80, dur:3.2, planets:[{col:'#38BFA1',sz:8,start:60},{col:'#6EE7B7',sz:5,start:200},{col:'#38BFA1',sz:4,start:320}] },
+      { r:103,dur:4.8, planets:[{col:'#38BFA1',sz:10,start:90},{col:'#A7F3D0',sz:5,start:210},{col:'#6EE7B7',sz:4,start:330}] },
+    ],
+    badge:{ bg:'linear-gradient(145deg,#042f2e,#021a1a)', border:'rgba(56,191,161,.5)', glow:'rgba(56,191,161,.4)' },
+    badgeGrad: 'linear-gradient(160deg,#ecfdf5,#38BFA1 45%,#065f46)',
+    btn:{ bg:'linear-gradient(135deg,#38BFA1 0%,#0F8A72 100%)', color:'#022c22', glow:'rgba(56,191,161,.5)' },
+    confetti: ['#38BFA1','#6EE7B7','#A7F3D0','#fff','#059669'],
+  },
 };
 
 let lbOpening   = false;
@@ -120,21 +133,27 @@ async function initLiff() {
 //  INIT
 // ============================================================
 async function init() {
-  const grid = document.getElementById('lb-grid');
+  const grid   = document.getElementById('lb-grid');
+  const params = new URLSearchParams(window.location.search);
+  const room   = params.get('room');
+  const token  = params.get('token');
+  const isPaid = params.get('paid'); // ✅ เช็ค paid param
 
   // skeleton
-  grid.innerHTML = LB_CONFIG.map(() => `
-    <div class="lb-card lb-skeleton"></div>
-  `).join('');
+  grid.innerHTML = LB_CONFIG.map(() =>
+    `<div class="lb-card lb-skeleton"></div>`
+  ).join('');
 
   await initLiff();
 
-  const params = new URLSearchParams(window.location.search);
-  const room  = params.get('room');
-  const token = params.get('token');
-
   if (room) {
     document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
+  }
+
+  // ✅ แยก routing
+  if (isPaid !== null) {
+    await initPaidPage(room);
+  } else if (room) {
     await loadLootBoxForRoom(room);
   } else if (token) {
     await loadLootBoxByToken(token);
@@ -145,6 +164,71 @@ async function init() {
   }
 }
 
+// ============================================================
+//  PAID PAGE
+// ============================================================
+async function initPaidPage(roomNo) {
+  // แก้ header
+  document.querySelector('.dash-title h1').textContent = 'กล่องโบนัส';
+  document.querySelector('.dash-title p').textContent  = 'รางวัลจากการจ่ายตรงเวลา';
+  document.querySelector('.count-wrap').style.display  = 'none';
+
+  // แก้ grid เป็น single card
+  const grid = document.getElementById('lb-grid');
+  grid.style.cssText = 'display:flex;justify-content:center;width:90%;max-width:380px';
+  grid.innerHTML = `<div class="lb-card lb-skeleton" style="width:100%;min-height:200px"></div>`;
+
+  if (!roomNo) { showError('❌ ไม่พบข้อมูลห้อง'); return; }
+
+  try {
+    const result = await callGAS('getLootBoxDataByRoom', { roomNo });
+    if (!result.success) { showError('❌ ' + (result.message || 'โหลดไม่ได้')); return; }
+    renderPaidCard((result.boxes || {})['PAID'] || {});
+  } catch (e) {
+    showError('❌ โหลดข้อมูลไม่ได้ กรุณาลองใหม่ครับ');
+  }
+}
+
+function renderPaidCard(info) {
+  const grid     = document.getElementById('lb-grid');
+  const hasBox   = info.token && !info.opened;
+  const isOpened = info.token &&  info.opened;
+  const isLocked = !info.token;
+
+  const card = document.createElement('div');
+  card.className = 'lb-card'
+    + (hasBox   ? ' can-open' : '')
+    + (isOpened ? ' used'     : '')
+    + (isLocked ? ' locked'   : '');
+  card.id = 'lb-card-PAID';
+  card.setAttribute('data-tier', 'paid');
+  card.style.cssText = 'width:100%;padding:40px 20px;--t-color:#38BFA1';
+
+  card.innerHTML = `
+    <span class="lb-card-icon" style="font-size:64px">${
+      isOpened ? '✅' : hasBox ? '🎁' : '🔒'
+    }</span>
+    <div class="lb-card-name" style="font-size:16px;margin-top:16px">PAID BONUS</div>
+    <div class="lb-card-sub" style="font-size:14px;margin-top:8px">${
+      hasBox   ? 'กดเพื่อเปิดกล่อง!' :
+      isOpened ? 'เปิดแล้วเดือนนี้'  :
+                 'จ่ายตรงเวลาเพื่อรับกล่อง'
+    }</div>
+    <div class="lb-card-ms ms-paid" style="margin-top:16px">จ่ายตรงเวลา</div>
+  `;
+
+  if (hasBox) {
+    card.onclick = () => startLootOpen('PAID', 'กล่อง Paid Bonus', 'paid', info.token);
+  }
+
+  grid.innerHTML = '';
+  grid.appendChild(card);
+  setTimeout(() => card.classList.add('fade-in'), 50);
+}
+
+// ============================================================
+//  LOAD DATA
+// ============================================================
 async function loadLootBoxForRoom(roomNo) {
   try {
     const result = await callGAS('getLootBoxDataByRoom', { roomNo });
@@ -170,7 +254,7 @@ async function loadLootBoxByUserId(userId) {
 }
 
 // ============================================================
-//  RENDER
+//  RENDER — 4 กล่องเดิม
 // ============================================================
 function renderPage(result) {
   if (result.roomNo) {
@@ -204,7 +288,7 @@ function renderLootGrid(boxes) {
       <div class="lb-card-name">${cfg.name.toUpperCase()}</div>
       <div class="lb-card-sub">${
         hasBox   ? 'กดเพื่อเปิดกล่อง' :
-        isOpened ? 'เปิดแล้ว' : 'ยังไม่ถึงรอบ'
+        isOpened ? 'เปิดแล้ว'         : 'ยังไม่ถึงรอบ'
       }</div>
       <div class="lb-card-ms ${cfg.ms}">ครบ ${cfg.milestone} วัน</div>
     `;
@@ -217,6 +301,7 @@ function renderLootGrid(boxes) {
     grid.appendChild(card);
   });
 }
+
 // ============================================================
 //  SOLAR SYSTEM HTML
 // ============================================================
@@ -270,38 +355,27 @@ function startLootOpen(milestone, name, tier, token) {
   const overlay = document.getElementById('lb-overlay');
   const flash   = document.getElementById('flash');
 
-  // set tier color
   document.documentElement.style.setProperty('--t-color', cfg.color);
-
-  // show overlay
   overlay.style.background = '#000';
   overlay.classList.add('active');
-
-  // reset & show spin
   document.getElementById('result-ui').classList.remove('show');
   document.getElementById('spin-wrap').style.display = 'flex';
   document.getElementById('spin-stage').innerHTML = buildSolarHTML(tier);
-
-  // shake
   overlay.classList.remove('shake-soft','shake-mid','shake-hard','shake-chaos');
   overlay.classList.add(cfg.shakeClass);
 
-  // box tension
   const boxIcon = document.getElementById('box-icon');
   boxIcon.style.setProperty('--tension-dur', cfg.tensionDur);
   setTimeout(() => boxIcon.classList.add('box-tension'), 100);
 
-  // legend glitch
   if (cfg.glitch) {
     ['err1','err2','err3'].forEach(id => document.getElementById(id).classList.add('show'));
     setTimeout(() => boxIcon.classList.add('box-glitch'), 1600);
   }
 
-  // API call
   callGAS('openLootBox', { token })
     .then(result => {
       const waitTime = cfg.glitch ? 3600 : 2700;
-
       setTimeout(() => {
         if (!result.success) {
           closeLootPopup();
@@ -310,45 +384,34 @@ function startLootOpen(milestone, name, tier, token) {
           return;
         }
 
-        // flash
         flash.style.animation = 'flashTrigger .6s forwards';
-
         setTimeout(() => {
           flash.style.animation = '';
           overlay.classList.remove('shake-soft','shake-mid','shake-hard','shake-chaos');
           ['err1','err2','err3'].forEach(id => document.getElementById(id).classList.remove('show'));
-
-          // hide spin
           document.getElementById('spin-wrap').style.display = 'none';
           overlay.style.background = 'radial-gradient(circle,#1E293B 0%,#000 100%)';
 
-          // fill badge
           const badge = document.getElementById('res-badge');
           const sym   = badge.querySelector('.res-badge-sym');
           badge.style.cssText = `width:90px;height:90px;border-radius:18px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;animation:badgeFloat 2s ease-in-out infinite alternate;background:${cfg.badge.bg};border:1.5px solid ${cfg.badge.border};box-shadow:0 0 28px ${cfg.badge.glow}`;
           sym.style.cssText   = `font-size:46px;font-weight:900;font-family:Arial Black,sans-serif;position:relative;z-index:1;line-height:1;background:${cfg.badgeGrad};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 14px ${cfg.color})`;
-
-          // tier name
           document.getElementById('res-tier-name').textContent = cfg.label;
 
-          // button colors
           const btn = document.getElementById('btn-claim');
           btn.style.setProperty('--btn-bg',    cfg.btn.bg);
           btn.style.setProperty('--btn-color', cfg.btn.color);
           btn.style.setProperty('--btn-glow',  cfg.btn.glow);
           btn.style.color = cfg.btn.color;
 
-          // reset amount animation
           const valEl = document.getElementById('prize-val');
           valEl.style.animation = 'none';
           valEl.textContent = '0';
           void valEl.offsetWidth;
           valEl.style.animation = '';
-
-          // show result
           document.getElementById('result-ui').classList.add('show');
 
-          // update card
+          // ✅ update card ทั้ง grid และ paid
           const card = document.getElementById('lb-card-' + milestone);
           if (card) {
             card.classList.add('used');
@@ -358,7 +421,6 @@ function startLootOpen(milestone, name, tier, token) {
           const cur = Number(document.getElementById('lb-count').textContent) || 0;
           document.getElementById('lb-count').textContent = Math.max(0, cur - 1);
 
-          // count up + confetti
           setTimeout(() => {
             countUp(valEl, result.discount_amount, 1800);
             spawnConfetti(cfg.confetti);
