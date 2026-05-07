@@ -502,39 +502,12 @@ function spawnConfettiStop() {
 // ============================================================
 //  STARDUST — PAID BOX
 // ============================================================
+const STAR_COLORS = ['#E879F9','#C084FC','#A5F3FC','#FCA5A5','#F0ABFC','#fff','#DDD6FE'];
 let starParticles = [];
 let starAnimId    = null;
 let starPhase     = 'idle';
 let starExplodeT  = 0;
 let starGatherT   = 0;
-
-const STAR_COLORS = ['#E879F9','#C084FC','#A5F3FC','#FCA5A5','#F0ABFC','#fff','#DDD6FE'];
-
-function randomStarColor() {
-  return STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)];
-}
-
-function lerp(a, b, t) { return a + (b - a) * t; }
-
-function createStarParticles(cx, cy) {
-  starParticles = [];
-  for (let i = 0; i < 120; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 2 + Math.random() * 5;
-    starParticles.push({
-      x: cx, y: cy,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - Math.random() * 3,
-      size: 2 + Math.random() * 4,
-      color: randomStarColor(),
-      alpha: 1,
-      orbitR: 60 + Math.random() * 80,
-      orbitSpeed: (Math.random() > .5 ? 1 : -1) * (.02 + Math.random() * .04),
-      orbitAngle: angle,
-      twinkle: Math.random() * Math.PI * 2
-    });
-  }
-}
 
 function startStardustOpen(token) {
   const overlay = document.getElementById('paid-overlay');
@@ -550,36 +523,40 @@ function startStardustOpen(token) {
   document.getElementById('paid-result').classList.remove('show');
   boxIcon.style.display = 'flex';
 
-  starPhase     = 'explode';
-  starExplodeT  = 0;
-  starGatherT   = 0;
+  starPhase    = 'explode';
+  starExplodeT = 0;
+  starGatherT  = 0;
   createStarParticles(cx, cy);
 
-  // ซ่อนกล่องแล้วเริ่ม animate
   setTimeout(() => {
     boxIcon.style.animation = 'none';
     boxIcon.style.transform = 'scale(0)';
   }, 300);
 
-  // เรียก API พร้อมกัน
-  const apiPromise = callGAS('openLootBox', { token });
+  // ✅ เรียก API ทันที ไม่รอ animation
+  let apiResult = null;
+  callGAS('openLootBox', { token })
+    .then(r  => { apiResult = r; })
+    .catch(() => { apiResult = { success: false, message: 'เกิดข้อผิดพลาด' }; });
 
   const ctx = canvas.getContext('2d');
+
   function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // ===== PHASE: EXPLODE =====
     if (starPhase === 'explode') {
       starExplodeT++;
       starParticles.forEach(p => {
         p.x += p.vx; p.y += p.vy;
         p.vy += 0.08; p.vx *= 0.98;
         p.twinkle += 0.1;
-        const a = .6 + .4 * Math.sin(p.twinkle);
-        drawStar(ctx, p, a);
+        drawStar(ctx, p, .6 + .4 * Math.sin(p.twinkle));
       });
       if (starExplodeT > 60) { starPhase = 'orbit'; starGatherT = 0; }
     }
 
+    // ===== PHASE: ORBIT =====
     else if (starPhase === 'orbit') {
       starGatherT++;
       starParticles.forEach(p => {
@@ -592,6 +569,7 @@ function startStardustOpen(token) {
       if (starGatherT > 80) { starPhase = 'gather'; starGatherT = 0; }
     }
 
+    // ===== PHASE: GATHER =====
     else if (starPhase === 'gather') {
       starGatherT++;
       const progress = Math.min(starGatherT / 60, 1);
@@ -623,20 +601,50 @@ function startStardustOpen(token) {
       }
 
       if (progress >= 1) {
+        starPhase   = 'waiting';
+        starGatherT = 0;
+      }
+    }
+
+    // ===== PHASE: WAITING — กระพริบแสงรอ API ไม่สะดุด =====
+    else if (starPhase === 'waiting') {
+      starGatherT++;
+      const pulse = .3 + .3 * Math.sin(starGatherT * .12);
+
+      ctx.save();
+      ctx.globalAlpha = pulse;
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 130);
+      grad.addColorStop(0, '#E879F9');
+      grad.addColorStop(.5, '#C084FC');
+      grad.addColorStop(1, 'transparent');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 130, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+
+      // วงแหวนหมุน
+      starGatherT % 1 === 0 && starParticles.slice(0, 20).forEach((p, i) => {
+        const a = (starGatherT * .05) + (i / 20) * Math.PI * 2;
+        p.x = cx + Math.cos(a) * 50;
+        p.y = cy + Math.sin(a) * 50;
+        p.twinkle += .2;
+        drawStar(ctx, p, .4 + .4 * Math.sin(p.twinkle));
+      });
+
+      // ✅ API ได้ผลแล้ว → reveal
+      if (apiResult !== null) {
         starPhase = 'done';
-        apiPromise.then(result => {
-          if (!result.success) {
-            closePaidOverlay();
-            showToast('❌ ' + (result.message || 'เกิดข้อผิดพลาด'), 'error');
-            lbOpening = false;
-            return;
-          }
-          showStardustResult(result, canvas, cx, cy);
-        }).catch(() => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (!apiResult.success) {
           closePaidOverlay();
-          showToast('❌ เกิดข้อผิดพลาด', 'error');
+          showToast('❌ ' + (apiResult.message || 'เกิดข้อผิดพลาด'), 'error');
           lbOpening = false;
-        });
+          return;
+        }
+
+        showStardustResult(apiResult, canvas, cx, cy);
         return;
       }
     }
@@ -649,7 +657,7 @@ function startStardustOpen(token) {
 
 function drawStar(ctx, p, alpha) {
   ctx.save();
-  ctx.globalAlpha = alpha;
+  ctx.globalAlpha = Math.max(0, alpha);
   ctx.fillStyle   = p.color;
   ctx.shadowColor = p.color;
   ctx.shadowBlur  = 8;
@@ -657,6 +665,32 @@ function drawStar(ctx, p, alpha) {
   ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
   ctx.fill();
   ctx.restore();
+}
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function createStarParticles(cx, cy) {
+  starParticles = [];
+  for (let i = 0; i < 120; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 2 + Math.random() * 5;
+    starParticles.push({
+      x: cx, y: cy,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - Math.random() * 3,
+      size: 2 + Math.random() * 4,
+      color: randomStarColor(),
+      alpha: 1,
+      orbitR: 60 + Math.random() * 80,
+      orbitSpeed: (Math.random() > .5 ? 1 : -1) * (.02 + Math.random() * .04),
+      orbitAngle: angle,
+      twinkle: Math.random() * Math.PI * 2
+    });
+  }
+}
+
+function randomStarColor() {
+  return STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)];
 }
 
 function showStardustResult(result, canvas, cx, cy) {
@@ -670,7 +704,6 @@ function showStardustResult(result, canvas, cx, cy) {
 
   resultEl.classList.add('show');
 
-  // update card
   const card = document.getElementById('lb-card-PAID');
   if (card) {
     card.classList.remove('can-open');
@@ -689,9 +722,9 @@ function showStardustResult(result, canvas, cx, cy) {
 }
 
 function spawnStarConfetti(canvas, cx, cy) {
-  const ctx = canvas.getContext('2d');
-  let drops = [];
-  for (let i = 0; i < 80; i++) {
+  const ctx  = canvas.getContext('2d');
+  let drops  = [];
+  for (let i = 0; i < 100; i++) {
     drops.push({
       x: Math.random() * canvas.width,
       y: -10 - Math.random() * 100,
@@ -699,15 +732,18 @@ function spawnStarConfetti(canvas, cx, cy) {
       vy: 1.5 + Math.random() * 2.5,
       size: 2 + Math.random() * 5,
       color: randomStarColor(),
-      alpha: 1
+      alpha: 1,
+      twinkle: Math.random() * Math.PI * 2
     });
   }
   function fall() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drops = drops.filter(p => p.alpha > .05);
     drops.forEach(p => {
-      p.x += p.vx; p.y += p.vy; p.alpha -= .006;
-      drawStar(ctx, p, p.alpha);
+      p.x += p.vx; p.y += p.vy;
+      p.alpha -= .005;
+      p.twinkle += .1;
+      drawStar(ctx, p, p.alpha * (.6 + .4 * Math.sin(p.twinkle)));
     });
     if (drops.length) requestAnimationFrame(fall);
     else ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -722,7 +758,8 @@ function closePaidOverlay() {
   canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
   if (starAnimId) { cancelAnimationFrame(starAnimId); starAnimId = null; }
   starPhase = 'idle';
-  document.getElementById('paid-box-icon').style.cssText = '';
+  const boxIcon = document.getElementById('paid-box-icon');
+  boxIcon.style.cssText = '';
   document.getElementById('paid-result').classList.remove('show');
   lbOpening = false;
 }
