@@ -201,7 +201,7 @@ function renderPaidCard(info) {
     + (isLocked ? ' locked'   : '');
   card.id = 'lb-card-PAID';
   card.setAttribute('data-tier', 'paid');
-  card.style.cssText = 'width:100%;padding:40px 20px;--t-color:#38BFA1';
+  card.style.cssText = 'width:100%;padding:40px 20px;--t-color:#C084FC';
 
   card.innerHTML = `
     <span class="lb-card-icon" style="font-size:64px">${
