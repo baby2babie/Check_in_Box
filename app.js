@@ -15,7 +15,9 @@ const LB_CONFIG = [
 const TIER_CFG = {
   paid: {
   color: '#C084FC', label: 'PAID BONUS',
-  shakeClass: 'shake-hard', tensionDur: '3.0s', glitch: true,
+  shakeClass: 'shake-soft',   // ✅ เบาลง
+  tensionDur: '3.0s',
+  glitch: false, 
   ringCol: 'rgba(192,132,252,.3)',
   orbits: [
     { r:53, dur:1.8, planets:[{col:'#E879F9',sz:6,start:0},{col:'#A5F3FC',sz:4,start:180}] },
@@ -365,7 +367,9 @@ function startLootOpen(milestone, name, tier, token) {
 
   const boxIcon = document.getElementById('box-icon');
   boxIcon.style.setProperty('--tension-dur', cfg.tensionDur);
-  setTimeout(() => boxIcon.classList.add('box-tension'), 100);
+setTimeout(() => {
+  boxIcon.classList.add(tier === 'paid' ? 'box-paid-tension' : 'box-tension');
+}, 100);
 
   if (cfg.glitch) {
     // ✅ set สี error text ตาม tier
