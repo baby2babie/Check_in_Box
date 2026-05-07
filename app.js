@@ -609,7 +609,7 @@ function startStardustOpen(token) {
     // ===== PHASE: WAITING — กระพริบแสงรอ API ไม่สะดุด =====
     else if (starPhase === 'waiting') {
       starGatherT++;
-      const pulse = .3 + .3 * Math.sin((starGatherT / 60) * Math.PI * 2);
+    const pulse = .3 + .3 * Math.sin((starGatherT / 120) * Math.PI * 2);
 
       ctx.save();
       ctx.globalAlpha = pulse;
