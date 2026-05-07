@@ -205,7 +205,7 @@ function renderPaidCard(info) {
 
   card.innerHTML = `
     <span class="lb-card-icon" style="font-size:64px">${
-      isOpened ? '✅' : hasBox ? '🎁' : '🔒'
+      isOpened ? '🎁' : hasBox ? '🎁' : '🔒'
     }</span>
     <div class="lb-card-name" style="font-size:16px;margin-top:16px">PAID BONUS</div>
     <div class="lb-card-sub" style="font-size:14px;margin-top:8px">${
