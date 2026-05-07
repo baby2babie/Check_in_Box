@@ -82,22 +82,7 @@ const TIER_CFG = {
     badgeGrad: 'linear-gradient(160deg,#fff1f2,#FF5555 45%,#7f1d1d)',
     btn:{ bg:'linear-gradient(135deg,#EF4444 0%,#7F1D1D 100%)', color:'#FFF1F2', glow:'rgba(239,68,68,.6)' },
     confetti: ['#FF5555','#FF8C00','#FCA5A5','#fff','#EF4444'],
-  },
-  // ✅ เพิ่ม paid tier
-  paid: {
-    color: '#38BFA1', label: 'PAID BONUS',
-    shakeClass: 'shake-mid', tensionDur: '2.8s', glitch: false,
-    ringCol: 'rgba(56,191,161,.3)',
-    orbits: [
-      { r:53, dur:2.0, planets:[{col:'#38BFA1',sz:6,start:0},{col:'#A7F3D0',sz:4,start:180}] },
-      { r:80, dur:3.2, planets:[{col:'#38BFA1',sz:8,start:60},{col:'#6EE7B7',sz:5,start:200},{col:'#38BFA1',sz:4,start:320}] },
-      { r:103,dur:4.8, planets:[{col:'#38BFA1',sz:10,start:90},{col:'#A7F3D0',sz:5,start:210},{col:'#6EE7B7',sz:4,start:330}] },
-    ],
-    badge:{ bg:'linear-gradient(145deg,#042f2e,#021a1a)', border:'rgba(56,191,161,.5)', glow:'rgba(56,191,161,.4)' },
-    badgeGrad: 'linear-gradient(160deg,#ecfdf5,#38BFA1 45%,#065f46)',
-    btn:{ bg:'linear-gradient(135deg,#38BFA1 0%,#0F8A72 100%)', color:'#022c22', glow:'rgba(56,191,161,.5)' },
-    confetti: ['#38BFA1','#6EE7B7','#A7F3D0','#fff','#059669'],
-  },
+  }  
 };
 
 let lbOpening   = false;
