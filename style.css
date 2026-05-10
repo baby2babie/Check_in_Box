@@ -440,6 +440,35 @@ html, body {
   opacity: 0; transform: scale(.3);
   animation: paidAmount .7s cubic-bezier(.175,.885,.32,1.275) forwards .4s;
 }
+/* ===== FLOAT — แต่ละกล่องสลับเฟส ===== */
+@keyframes float1 { 0%,100%{transform:translateY(0)}    50%{transform:translateY(-9px)} }
+@keyframes float2 { 0%,100%{transform:translateY(-5px)} 50%{transform:translateY(4px)}  }
+@keyframes float3 { 0%,100%{transform:translateY(-3px)} 50%{transform:translateY(6px)}  }
+@keyframes float4 { 0%,100%{transform:translateY(0)}    50%{transform:translateY(-7px)} }
+
+.lb-card.float-1 { animation: float1 2.8s ease-in-out infinite; }
+.lb-card.float-2 { animation: float2 3.2s ease-in-out infinite; }
+.lb-card.float-3 { animation: float3 2.6s ease-in-out infinite; }
+.lb-card.float-4 { animation: float4 3.0s ease-in-out infinite; }
+
+/* can-open รวม float + glow */
+.lb-card.can-open.float-1[data-tier="silver"] { animation: float1 2.8s ease-in-out infinite, glow-silver 2.5s infinite ease-in-out; }
+.lb-card.can-open.float-2[data-tier="gold"]   { animation: float2 3.2s ease-in-out infinite, glow-gold   2.5s infinite ease-in-out; }
+.lb-card.can-open.float-3[data-tier="plat"]   { animation: float3 2.6s ease-in-out infinite, glow-plat   2.5s infinite ease-in-out; }
+.lb-card.can-open.float-4[data-tier="legend"] { animation: float4 3.0s ease-in-out infinite, glow-legend 2.5s infinite ease-in-out; }
+
+/* used/locked หยุด float */
+.lb-card.used,
+.lb-card.locked { animation: none !important; }
+
+/* ===== SPARKS CANVAS ===== */
+canvas.sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  border-radius: 24px;
+}
 .paid-prize-label { color: #C084FC; font-size: 13px; letter-spacing: 3px; margin-top: 8px; font-family: 'Orbitron', monospace; }
 .paid-prize-note  { font-size: 12px; color: #475569; margin-top: 4px; margin-bottom: 28px; }
 .paid-res-tier    { font-family: 'Orbitron', monospace; font-size: 11px; letter-spacing: 2px; color: #C084FC; margin-bottom: 8px; }
