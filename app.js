@@ -275,6 +275,18 @@ function renderLootGrid(boxes) {
     const isOpened = info.token &&  info.opened;
     const isLocked = !info.token;
 
+    // ✅ wrap div สำหรับ canvas
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative';
+
+    // ✅ canvas particles (เฉพาะ can-open)
+    if (hasBox) {
+      const cv = document.createElement('canvas');
+      cv.className = 'sparks';
+      cv.id = 'sp-' + cfg.milestone;
+      wrap.appendChild(cv);
+    }
+
     const card = document.createElement('div');
     card.className = 'lb-card'
       + (hasBox   ? ' can-open' : '')
@@ -283,6 +295,9 @@ function renderLootGrid(boxes) {
     card.id = 'lb-card-' + cfg.milestone;
     card.setAttribute('data-tier', cfg.tier);
     card.style.setProperty('--t-color', TIER_CFG[cfg.tier].color);
+
+    // ✅ float class แยกตาม index
+    card.classList.add('float-' + (i + 1));
 
     card.innerHTML = `
       <span class="lb-card-icon">🎁</span>
@@ -298,8 +313,14 @@ function renderLootGrid(boxes) {
       card.onclick = () => startLootOpen(cfg.milestone, cfg.name, cfg.tier, info.token);
     }
 
+    wrap.appendChild(card);
     setTimeout(() => card.classList.add('fade-in'), i * 80);
-    grid.appendChild(card);
+    grid.appendChild(wrap);
+
+    // ✅ init particles หลัง DOM ready
+    if (hasBox) {
+      setTimeout(() => initSparks('sp-' + cfg.milestone, TIER_CFG[cfg.tier].color), i * 80 + 100);
+    }
   });
 }
 
@@ -763,7 +784,61 @@ function closePaidOverlay() {
   document.getElementById('paid-result').classList.remove('show');
   lbOpening = false;
 }
-// ============================================================
-//  START
-// ============================================================
+function initSparks(id, baseColor) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const wrap = canvas.parentElement;
+  canvas.width  = wrap.offsetWidth  || 160;
+  canvas.height = wrap.offsetHeight || 180;
+  const ctx = canvas.getContext('2d');
+  const particles = [];
+
+  // สร้างสี palette จาก baseColor + white
+  const cols = [baseColor, '#ffffff', baseColor + 'aa'];
+
+  function spawn() {
+    const edge = Math.floor(Math.random() * 4);
+    let x, y;
+    if      (edge === 0) { x = Math.random() * canvas.width; y = 0; }
+    else if (edge === 1) { x = canvas.width;  y = Math.random() * canvas.height; }
+    else if (edge === 2) { x = Math.random() * canvas.width; y = canvas.height; }
+    else                 { x = 0; y = Math.random() * canvas.height; }
+    particles.push({
+      x, y,
+      vx: (Math.random() - .5) * 1.0,
+      vy: (Math.random() - .5) * 1.0,
+      size: 1.5 + Math.random() * 2,
+      alpha: 1,
+      color: cols[Math.floor(Math.random() * cols.length)],
+      life: 0,
+      maxLife: 45 + Math.random() * 35
+    });
+  }
+
+  let frame = 0;
+  function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    frame++;
+    if (frame % 7 === 0) spawn();
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life++;
+      p.alpha = 1 - p.life / p.maxLife;
+      if (p.alpha <= 0) { particles.splice(i, 1); continue; }
+      ctx.save();
+      ctx.globalAlpha = p.alpha * 0.8;
+      ctx.fillStyle   = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur  = 8;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+}
 init();
