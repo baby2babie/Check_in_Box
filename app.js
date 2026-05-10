@@ -237,7 +237,7 @@ grid.appendChild(wrap);
 setTimeout(() => {
   card.classList.add('fade-in');
   if (hasBox) {
-  setTimeout(() => initPaidTrace('paid-trace', wrap), 300); // เพิ่มเป็น 300
+  setTimeout(() => initPaidTrace('paid-trace', wrap), 300);
 }
 
 // ============================================================
