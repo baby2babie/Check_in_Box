@@ -14,21 +14,21 @@ const LB_CONFIG = [
 
 const TIER_CFG = {
   paid: {
-  color: '#C084FC', label: 'PAID BONUS',
-  shakeClass: 'shake-soft',   // ✅ เบาลง
-  tensionDur: '3.0s',
-  glitch: false, 
-  ringCol: 'rgba(192,132,252,.3)',
-  orbits: [
-    { r:53, dur:1.8, planets:[{col:'#E879F9',sz:6,start:0},{col:'#A5F3FC',sz:4,start:180}] },
-    { r:80, dur:2.8, planets:[{col:'#C084FC',sz:8,start:60},{col:'#FCA5A5',sz:5,start:200},{col:'#A5F3FC',sz:4,start:320}] },
-    { r:103,dur:4.2, planets:[{col:'#E879F9',sz:10,start:90},{col:'#C084FC',sz:5,start:210},{col:'#FCA5A5',sz:4,start:330}] },
-  ],
-  badge:{ bg:'linear-gradient(145deg,#1e0a2e,#120618)', border:'rgba(232,121,249,.4)', glow:'rgba(192,132,252,.35)' },
-  badgeGrad: 'linear-gradient(160deg,#fdf4ff,#E879F9 45%,#7e22ce)',
-  btn:{ bg:'linear-gradient(135deg,#E879F9 0%,#A855F7 100%)', color:'#1a0030', glow:'rgba(232,121,249,.5)' },
-  confetti: ['#E879F9','#C084FC','#A5F3FC','#FCA5A5','#fff','#F0ABFC'],
-},
+    color: '#C084FC', label: 'PAID BONUS',
+    shakeClass: 'shake-soft',
+    tensionDur: '3.0s',
+    glitch: false,
+    ringCol: 'rgba(192,132,252,.3)',
+    orbits: [
+      { r:53, dur:1.8, planets:[{col:'#E879F9',sz:6,start:0},{col:'#A5F3FC',sz:4,start:180}] },
+      { r:80, dur:2.8, planets:[{col:'#C084FC',sz:8,start:60},{col:'#FCA5A5',sz:5,start:200},{col:'#A5F3FC',sz:4,start:320}] },
+      { r:103,dur:4.2, planets:[{col:'#E879F9',sz:10,start:90},{col:'#C084FC',sz:5,start:210},{col:'#FCA5A5',sz:4,start:330}] },
+    ],
+    badge:{ bg:'linear-gradient(145deg,#1e0a2e,#120618)', border:'rgba(232,121,249,.4)', glow:'rgba(192,132,252,.35)' },
+    badgeGrad: 'linear-gradient(160deg,#fdf4ff,#E879F9 45%,#7e22ce)',
+    btn:{ bg:'linear-gradient(135deg,#E879F9 0%,#A855F7 100%)', color:'#1a0030', glow:'rgba(232,121,249,.5)' },
+    confetti: ['#E879F9','#C084FC','#A5F3FC','#FCA5A5','#fff','#F0ABFC'],
+  },
   silver: {
     color: '#94A3B8', label: 'SILVER RANK',
     shakeClass: 'shake-soft', tensionDur: '2.6s', glitch: false,
@@ -84,7 +84,7 @@ const TIER_CFG = {
     badgeGrad: 'linear-gradient(160deg,#fff1f2,#FF5555 45%,#7f1d1d)',
     btn:{ bg:'linear-gradient(135deg,#EF4444 0%,#7F1D1D 100%)', color:'#FFF1F2', glow:'rgba(239,68,68,.6)' },
     confetti: ['#FF5555','#FF8C00','#FCA5A5','#fff','#EF4444'],
-  }  
+  }
 };
 
 let lbOpening   = false;
@@ -138,9 +138,8 @@ async function init() {
   const params = new URLSearchParams(window.location.search);
   const room   = params.get('room');
   const token  = params.get('token');
-  const isPaid = params.get('paid'); // ✅ เช็ค paid param
+  const isPaid = params.get('paid');
 
-  // skeleton
   grid.innerHTML = LB_CONFIG.map(() =>
     `<div class="lb-card lb-skeleton"></div>`
   ).join('');
@@ -151,7 +150,6 @@ async function init() {
     document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
   }
 
-  // ✅ แยก routing
   if (isPaid !== null) {
     await initPaidPage(room);
   } else if (room) {
@@ -169,12 +167,10 @@ async function init() {
 //  PAID PAGE
 // ============================================================
 async function initPaidPage(roomNo) {
-  // แก้ header
   document.querySelector('.dash-title h1').textContent = 'กล่องโบนัส';
   document.querySelector('.dash-title p').textContent  = 'รางวัลจากการจ่ายตรงเวลา';
   document.querySelector('.count-wrap').style.display  = 'none';
 
-  // แก้ grid เป็น single card
   const grid = document.getElementById('lb-grid');
   grid.style.cssText = 'display:flex;justify-content:center;width:90%;max-width:380px';
   grid.innerHTML = `<div class="lb-card lb-skeleton" style="width:100%;height:290px"></div>`;
@@ -222,7 +218,8 @@ function renderPaidCard(info) {
     card.onclick = () => startLootOpen('PAID', 'กล่อง Paid Bonus', 'paid', info.token);
   }
 
-const wrap = document.createElement('div');
+  // ✅ wrap + border trace canvas
+  const wrap = document.createElement('div');
   wrap.style.cssText = 'position:relative;width:100%';
 
   if (hasBox) {
@@ -240,7 +237,7 @@ const wrap = document.createElement('div');
     card.classList.add('fade-in');
     if (hasBox) initPaidTrace('paid-trace', wrap);
   }, 300);
-}  // ✅ ปิด renderPaidCard
+}
 
 // ============================================================
 //  LOAD DATA
@@ -270,7 +267,7 @@ async function loadLootBoxByUserId(userId) {
 }
 
 // ============================================================
-//  RENDER — 4 กล่องเดิม
+//  RENDER — 4 กล่อง
 // ============================================================
 function renderPage(result) {
   if (result.roomNo) {
@@ -290,11 +287,9 @@ function renderLootGrid(boxes) {
     const isOpened = info.token &&  info.opened;
     const isLocked = !info.token;
 
-    // ✅ wrap div สำหรับ canvas
     const wrap = document.createElement('div');
     wrap.style.cssText = 'position:relative';
 
-    // ✅ canvas particles (เฉพาะ can-open)
     if (hasBox) {
       const cv = document.createElement('canvas');
       cv.className = 'sparks';
@@ -310,8 +305,6 @@ function renderLootGrid(boxes) {
     card.id = 'lb-card-' + cfg.milestone;
     card.setAttribute('data-tier', cfg.tier);
     card.style.setProperty('--t-color', TIER_CFG[cfg.tier].color);
-
-    // ✅ float class แยกตาม index
     card.classList.add('float-' + (i + 1));
 
     card.innerHTML = `
@@ -332,7 +325,6 @@ function renderLootGrid(boxes) {
     setTimeout(() => card.classList.add('fade-in'), i * 80);
     grid.appendChild(wrap);
 
-    // ✅ init particles หลัง DOM ready
     if (hasBox) {
       setTimeout(() => initSparks('sp-' + cfg.milestone, TIER_CFG[cfg.tier].color), i * 80 + 100);
     }
@@ -388,7 +380,6 @@ function startLootOpen(milestone, name, tier, token) {
   if (lbOpening) return;
   lbOpening = true;
 
-  // ✅ PAID ใช้ stardust overlay แยก
   if (tier === 'paid') {
     startStardustOpen(token);
     return;
@@ -409,12 +400,11 @@ function startLootOpen(milestone, name, tier, token) {
 
   const boxIcon = document.getElementById('box-icon');
   boxIcon.style.setProperty('--tension-dur', cfg.tensionDur);
-setTimeout(() => {
-  boxIcon.classList.add(tier === 'paid' ? 'box-paid-tension' : 'box-tension');
-}, 100);
+  setTimeout(() => {
+    boxIcon.classList.add(tier === 'paid' ? 'box-paid-tension' : 'box-tension');
+  }, 100);
 
   if (cfg.glitch) {
-    // ✅ set สี error text ตาม tier
     const errColor = tier === 'paid' ? '#C084FC' : '#ff0033';
     ['err1','err2','err3'].forEach(id => {
       const el = document.getElementById(id);
@@ -423,6 +413,7 @@ setTimeout(() => {
     });
     setTimeout(() => boxIcon.classList.add('box-glitch'), 1600);
   }
+
   callGAS('openLootBox', { token })
     .then(result => {
       const waitTime = cfg.glitch ? 3600 : 2700;
@@ -461,7 +452,6 @@ setTimeout(() => {
           valEl.style.animation = '';
           document.getElementById('result-ui').classList.add('show');
 
-          // ✅ update card ทั้ง grid และ paid
           const card = document.getElementById('lb-card-' + milestone);
           if (card) {
             card.classList.add('used');
@@ -535,6 +525,7 @@ function spawnConfettiStop() {
   w.classList.remove('show');
   w.innerHTML = '';
 }
+
 // ============================================================
 //  STARDUST — PAID BOX
 // ============================================================
@@ -569,7 +560,6 @@ function startStardustOpen(token) {
     boxIcon.style.transform = 'scale(0)';
   }, 300);
 
-  // ✅ เรียก API ทันที ไม่รอ animation
   let apiResult = null;
   callGAS('openLootBox', { token })
     .then(r  => { apiResult = r; })
@@ -580,7 +570,6 @@ function startStardustOpen(token) {
   function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // ===== PHASE: EXPLODE =====
     if (starPhase === 'explode') {
       starExplodeT++;
       starParticles.forEach(p => {
@@ -592,7 +581,6 @@ function startStardustOpen(token) {
       if (starExplodeT > 60) { starPhase = 'orbit'; starGatherT = 0; }
     }
 
-    // ===== PHASE: ORBIT =====
     else if (starPhase === 'orbit') {
       starGatherT++;
       starParticles.forEach(p => {
@@ -605,7 +593,6 @@ function startStardustOpen(token) {
       if (starGatherT > 80) { starPhase = 'gather'; starGatherT = 0; }
     }
 
-    // ===== PHASE: GATHER =====
     else if (starPhase === 'gather') {
       starGatherT++;
       const progress = Math.min(starGatherT / 60, 1);
@@ -636,16 +623,12 @@ function startStardustOpen(token) {
         ctx.restore();
       }
 
-      if (progress >= 1) {
-        starPhase   = 'waiting';
-        starGatherT = 0;
-      }
+      if (progress >= 1) { starPhase = 'waiting'; starGatherT = 0; }
     }
 
-    // ===== PHASE: WAITING — กระพริบแสงรอ API ไม่สะดุด =====
     else if (starPhase === 'waiting') {
       starGatherT++;
-    const pulse = .3 + .3 * Math.sin((starGatherT / 120) * Math.PI * 2);
+      const pulse = .3 + .3 * Math.sin((starGatherT / 120) * Math.PI * 2);
 
       ctx.save();
       ctx.globalAlpha = pulse;
@@ -659,7 +642,6 @@ function startStardustOpen(token) {
       ctx.fill();
       ctx.restore();
 
-      // วงแหวนหมุน
       starGatherT % 1 === 0 && starParticles.slice(0, 20).forEach((p, i) => {
         const a = (starGatherT * .05) + (i / 20) * Math.PI * 2;
         p.x = cx + Math.cos(a) * 50;
@@ -668,7 +650,6 @@ function startStardustOpen(token) {
         drawStar(ctx, p, .4 + .4 * Math.sin(p.twinkle));
       });
 
-      // ✅ API ได้ผลแล้ว → reveal
       if (apiResult !== null) {
         starPhase = 'done';
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -799,6 +780,10 @@ function closePaidOverlay() {
   document.getElementById('paid-result').classList.remove('show');
   lbOpening = false;
 }
+
+// ============================================================
+//  SPARKS — 4 กล่อง
+// ============================================================
 function initSparks(id, baseColor) {
   const canvas = document.getElementById(id);
   if (!canvas) return;
@@ -807,8 +792,6 @@ function initSparks(id, baseColor) {
   canvas.height = wrap.offsetHeight || 180;
   const ctx = canvas.getContext('2d');
   const particles = [];
-
-  // สร้างสี palette จาก baseColor + white
   const cols = [baseColor, '#ffffff', baseColor + 'aa'];
 
   function spawn() {
@@ -823,7 +806,6 @@ function initSparks(id, baseColor) {
       vx: (Math.random() - .5) * 1.0,
       vy: (Math.random() - .5) * 1.0,
       size: 1.5 + Math.random() * 2,
-      alpha: 1,
       color: cols[Math.floor(Math.random() * cols.length)],
       life: 0,
       maxLife: 45 + Math.random() * 35
@@ -840,10 +822,10 @@ function initSparks(id, baseColor) {
       p.x += p.vx;
       p.y += p.vy;
       p.life++;
-      p.alpha = 1 - p.life / p.maxLife;
-      if (p.alpha <= 0) { particles.splice(i, 1); continue; }
+      const alpha = 1 - p.life / p.maxLife;
+      if (alpha <= 0) { particles.splice(i, 1); continue; }
       ctx.save();
-      ctx.globalAlpha = p.alpha * 0.8;
+      ctx.globalAlpha = alpha * 0.8;
       ctx.fillStyle   = p.color;
       ctx.shadowColor = p.color;
       ctx.shadowBlur  = 8;
@@ -856,6 +838,10 @@ function initSparks(id, baseColor) {
   }
   loop();
 }
+
+// ============================================================
+//  BORDER TRACE — PAID กล่องเดียว
+// ============================================================
 function initPaidTrace(id, wrap) {
   const canvas = document.getElementById(id);
   if (!canvas) return;
@@ -941,4 +927,8 @@ function initPaidTrace(id, wrap) {
   }
   loop();
 }
+
+// ============================================================
+//  START
+// ============================================================
 init();
