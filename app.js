@@ -222,23 +222,9 @@ function renderPaidCard(info) {
     card.onclick = () => startLootOpen('PAID', 'กล่อง Paid Bonus', 'paid', info.token);
   }
 
-const wrap = document.createElement('div');
-wrap.style.cssText = 'position:relative;width:100%';
-
-const cv = document.createElement('canvas');
-cv.id = 'paid-trace';
-cv.style.cssText = 'position:absolute;inset:-3px;pointer-events:none;z-index:3;border-radius:27px';
-wrap.appendChild(cv);
-wrap.appendChild(card);
-
 grid.innerHTML = '';
-grid.appendChild(wrap);
-
-setTimeout(() => {
-  card.classList.add('fade-in');
-  if (hasBox) {
-  setTimeout(() => initPaidTrace('paid-trace', wrap), 300);
-}
+grid.appendChild(card);
+setTimeout(() => card.classList.add('fade-in'), 50);
 
 // ============================================================
 //  LOAD DATA
@@ -854,92 +840,5 @@ function initSparks(id, baseColor) {
   }
   loop();
 }
-function initPaidTrace(id, wrap) {
-  const canvas = document.getElementById(id);
-  if (!canvas) return;
-  const W = wrap.offsetWidth  + 6;
-  const H = wrap.offsetHeight + 6;
-  canvas.width  = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d');
-  const r   = 27;
 
-  const perimeter = 2 * (W + H) - (8 - 2 * Math.PI) * r;
-
-  const tracers = [
-    { t: 0.0,  speed: 0.0028, tailLen: 0.18, col: '#E879F9' },
-    { t: 0.33, speed: 0.0022, tailLen: 0.14, col: '#A5F3FC' },
-    { t: 0.66, speed: 0.0035, tailLen: 0.12, col: '#C084FC' },
-  ];
-
-  function progressToPoint(prog) {
-    prog = ((prog % 1) + 1) % 1;
-    const dist   = prog * perimeter;
-    const top    = W - 2*r + Math.PI*r/2;
-    const right  = top    + H - 2*r + Math.PI*r/2;
-    const bottom = right  + W - 2*r + Math.PI*r/2;
-
-    if (dist <= top) {
-      const topFlat = W - 2*r;
-      if (dist <= topFlat) return { x: r + dist, y: 0 };
-      const a = (dist - topFlat) / r - Math.PI/2;
-      return { x: W - r + Math.cos(a)*r, y: r + Math.sin(a)*r };
-    } else if (dist <= right) {
-      const d2 = dist - top;
-      if (d2 <= Math.PI*r/2) {
-        const a = (d2/r) - Math.PI/2 + Math.PI/2;
-        return { x: W - r + Math.cos(a)*r, y: r + Math.sin(a)*r };
-      }
-      const d3 = d2 - Math.PI*r/2;
-      if (d3 <= H - 2*r) return { x: W, y: r + d3 };
-      const a = (d3 - (H-2*r))/r;
-      return { x: W - r + Math.cos(a)*r, y: H - r + Math.sin(a)*r };
-    } else if (dist <= bottom) {
-      const d2 = dist - right;
-      if (d2 <= Math.PI*r/2) {
-        const a = d2/r;
-        return { x: W - r + Math.cos(a)*r, y: H - r + Math.sin(a)*r };
-      }
-      const d3 = d2 - Math.PI*r/2;
-      if (d3 <= W - 2*r) return { x: W - r - d3, y: H };
-      const a = Math.PI + (d3 - (W-2*r))/r;
-      return { x: r + Math.cos(a)*r, y: H - r + Math.sin(a)*r };
-    } else {
-      const d2 = dist - bottom;
-      if (d2 <= Math.PI*r/2) {
-        const a = Math.PI + d2/r;
-        return { x: r + Math.cos(a)*r, y: H - r + Math.sin(a)*r };
-      }
-      const d3 = d2 - Math.PI*r/2;
-      if (d3 <= H - 2*r) return { x: 0, y: H - r - d3 };
-      const a = (3*Math.PI/2) + (d3 - (H-2*r))/r;
-      return { x: r + Math.cos(a)*r, y: r + Math.sin(a)*r };
-    }
-  }
-
-  function loop() {
-    ctx.clearRect(0, 0, W, H);
-    tracers.forEach(tr => {
-      tr.t += tr.speed;
-      const steps = 40;
-      for (let s = steps; s >= 0; s--) {
-        const prog  = tr.t - (s / steps) * tr.tailLen;
-        const pt    = progressToPoint(prog);
-        const alpha = (1 - s / steps) * 0.9;
-        const size  = 2.5 * (1 - s / steps * 0.6);
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle   = tr.col;
-        ctx.shadowColor = tr.col;
-        ctx.shadowBlur  = 12;
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-    });
-    requestAnimationFrame(loop);
-  }
-  loop();
-}
 init();
