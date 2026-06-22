@@ -90,6 +90,7 @@ const TIER_CFG = {
 let lbOpening   = false;
 let liffReady   = false;
 let liffProfile = null;
+let currentRoomNo = null;
 
 // ============================================================
 //  UTILS
@@ -139,6 +140,7 @@ async function init() {
   const room   = params.get('room');
   const token  = params.get('token');
   const isPaid = params.get('paid');
+  const view   = params.get('view');
 
   grid.innerHTML = LB_CONFIG.map(() =>
     `<div class="lb-card lb-skeleton"></div>`
@@ -161,6 +163,9 @@ async function init() {
   } else {
     showError('❌ ไม่พบข้อมูลห้อง');
   }
+  if (view === 'history' && currentRoomNo) {
+    openHistoryOverlay();
+  }
 }
 
 // ============================================================
@@ -180,6 +185,8 @@ async function initPaidPage(roomNo) {
   try {
     const result = await callGAS('getLootBoxDataByRoom', { roomNo });
     if (!result.success) { showError('❌ ' + (result.message || 'โหลดไม่ได้')); return; }
+    currentRoomNo = roomNo;
+    showHistoryButton();
     renderPaidCard((result.boxes || {})['PAID'] || {});
   } catch (e) {
     showError('❌ โหลดข้อมูลไม่ได้ กรุณาลองใหม่ครับ');
@@ -272,6 +279,8 @@ async function loadLootBoxByUserId(userId) {
 function renderPage(result) {
   if (result.roomNo) {
     document.getElementById('lb-room-label').textContent = 'ห้อง ' + result.roomNo;
+    currentRoomNo = result.roomNo;
+    showHistoryButton();
   }
   document.getElementById('lb-count').textContent = result.totalBox || 0;
   renderLootGrid(result.boxes || {});
@@ -709,15 +718,59 @@ function createStarParticles(cx, cy) {
 function randomStarColor() {
   return STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)];
 }
-
 function showStardustResult(result, canvas, cx, cy) {
   const resultEl = document.getElementById('paid-result');
   const valEl    = document.getElementById('paid-prize-val');
+  const labelEl  = document.getElementById('paid-prize-label');
+  const subEl    = document.getElementById('paid-prize-sub');
+  const amount   = result.discount_amount;
 
+  const isJackpot = amount >= 50;
+  const isRare    = amount >= 30;
+
+  // ✅ label + sub
+if (subEl) {
+  subEl.style.fontFamily    = "'Orbitron', monospace";
+  subEl.style.letterSpacing = '3px';
+  subEl.style.fontSize      = '11px';
+
+  if (isJackpot) {
+    subEl.textContent = 'JACKPOT';
+    subEl.style.color = '#FFD700';
+  } else if (isRare) {
+    subEl.textContent = 'RARE PRIZE';
+    subEl.style.color = '#E879F9';
+  } else if (amount >= 20) {
+    subEl.textContent = 'SPECIAL';
+    subEl.style.color = '#A5F3FC';
+  } else {
+    subEl.textContent = '';
+  }
+}
+  // ✅ ตัวเลข — เปลี่ยนสีตามรางวัล
+  valEl.className = 'paid-prize-val' + (isJackpot ? ' jackpot' : '');
   valEl.style.animation = 'none';
   valEl.textContent = '0';
   void valEl.offsetWidth;
   valEl.style.animation = '';
+
+  // ✅ jackpot — shake + ring ทอง
+  if (isJackpot) {
+    const overlay = document.getElementById('paid-overlay');
+    overlay.classList.add('shake-mid');
+    setTimeout(() => overlay.classList.remove('shake-mid'), 1000);
+
+    // วงแหวนทองบน canvas
+    const ctx  = canvas.getContext('2d');
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 220);
+    grad.addColorStop(0,   '#FFD70066');
+    grad.addColorStop(0.5, '#F59E0B33');
+    grad.addColorStop(1,   'transparent');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 220, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   resultEl.classList.add('show');
 
@@ -726,17 +779,49 @@ function showStardustResult(result, canvas, cx, cy) {
     card.classList.remove('can-open');
     card.classList.add('used');
     card.querySelector('.lb-card-sub').textContent = 'เปิดแล้วเดือนนี้';
-    card.querySelector('.lb-card-icon').textContent = '🎁';
     card.onclick = null;
   }
 
+  const confetti = isJackpot
+    ? ['#FFD700','#E879F9','#fff','#FCA5A5','#F59E0B']
+    : isRare
+    ? ['#E879F9','#C084FC','#fff','#A5F3FC']
+    : ['#C084FC','#fff','#DDD6FE'];
+
   setTimeout(() => {
-    countUp(valEl, result.discount_amount, 1800);
-    spawnStarConfetti(canvas, cx, cy);
+    countUp(valEl, amount, isJackpot ? 2800 : 1800);
+    spawnStarConfetti(canvas, cx, cy, confetti);
   }, 300);
 
   lbOpening = false;
 }
+// function showStardustResult(result, canvas, cx, cy) {
+//   const resultEl = document.getElementById('paid-result');
+//   const valEl    = document.getElementById('paid-prize-val');
+
+//   valEl.style.animation = 'none';
+//   valEl.textContent = '0';
+//   void valEl.offsetWidth;
+//   valEl.style.animation = '';
+
+//   resultEl.classList.add('show');
+
+//   const card = document.getElementById('lb-card-PAID');
+//   if (card) {
+//     card.classList.remove('can-open');
+//     card.classList.add('used');
+//     card.querySelector('.lb-card-sub').textContent = 'เปิดแล้วเดือนนี้';
+//     card.querySelector('.lb-card-icon').textContent = '🎁';
+//     card.onclick = null;
+//   }
+
+//   setTimeout(() => {
+//     countUp(valEl, result.discount_amount, 1800);
+//     spawnStarConfetti(canvas, cx, cy);
+//   }, 300);
+
+//   lbOpening = false;
+// }
 
 function spawnStarConfetti(canvas, cx, cy) {
   const ctx  = canvas.getContext('2d');
@@ -927,7 +1012,109 @@ function initPaidTrace(id, wrap) {
   }
   loop();
 }
+// ============================================================
+//  HISTORY BUTTON + OVERLAY
+// ============================================================
+function showHistoryButton() {
+  document.getElementById('btn-history').classList.add('show');
+}
 
+const TH_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                    'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+function formatMonthLabel(monthKey) {
+  const [y, m] = String(monthKey).split('-').map(Number);
+  if (!y || !m) return monthKey;
+  return `${TH_MONTHS[m - 1]} ${y + 543}`;
+}
+
+function getTierMeta(tierRaw) {
+  if (String(tierRaw).trim() === 'PAID') {
+    return { name: 'PAID BONUS', color: TIER_CFG.paid.color };
+  }
+  const cfg = LB_CONFIG.find(c => c.milestone === Number(tierRaw));
+  if (cfg) return { name: cfg.name, color: TIER_CFG[cfg.tier].color };
+  return { name: 'ไม่ทราบ', color: '#475569' };
+}
+
+function openHistoryOverlay() {
+  document.getElementById('history-overlay').classList.add('active');
+  loadHistory();
+}
+
+function closeHistoryOverlay() {
+  document.getElementById('history-overlay').classList.remove('active');
+}
+
+async function loadHistory() {
+  const body = document.getElementById('history-body');
+  body.innerHTML = '<div class="loading">กำลังโหลด...</div>';
+
+  if (!currentRoomNo) {
+    body.innerHTML = '<div class="loading">❌ ไม่พบข้อมูลห้อง</div>';
+    return;
+  }
+
+  try {
+    const result = await callGAS('getLootHistory', { roomNo: currentRoomNo });
+    if (!result.success) {
+      body.innerHTML = `<div class="loading">❌ ${result.message || 'โหลดไม่ได้'}</div>`;
+      return;
+    }
+    renderHistory(result.history || []);
+  } catch (e) {
+    body.innerHTML = '<div class="loading">❌ โหลดข้อมูลไม่ได้ กรุณาลองใหม่ครับ</div>';
+  }
+}
+
+function renderHistory(history) {
+  const body = document.getElementById('history-body');
+
+  if (!history.length) {
+    body.innerHTML = '<div class="loading">ยังไม่มีประวัติการเปิดกล่องครับ</div>';
+    return;
+  }
+
+  body.innerHTML = history.map(h => {
+    const total     = h.items.reduce((s, it) => s + (it.opened ? Number(it.amount) : 0), 0);
+    const hasOpened = h.items.some(it => it.opened);
+
+    const itemsHtml = h.items.map(it => {
+      const meta = getTierMeta(it.tier);
+      const amountHtml = it.opened
+        ? `<span class="history-item-amount">฿${Number(it.amount).toLocaleString()}</span>`
+        : `<span class="history-item-amount not-opened">ไม่ได้เปิด</span>`;
+      return `
+        <div class="history-item">
+          <span class="history-item-tier" style="--tier-color:${meta.color}">
+            <span class="history-item-dot"></span>${meta.name}
+          </span>
+          ${amountHtml}
+        </div>`;
+    }).join('');
+
+    const statusHtml = hasOpened
+      ? `<span class="history-status ${h.applied ? 'applied' : 'pending'}">${h.applied ? 'ตัดบิลแล้ว' : 'รอตัดบิล'}</span>`
+      : '';
+
+    const totalHtml = hasOpened
+      ? `<div class="history-total">
+           <span class="history-total-label">รวม</span>
+           <span class="history-total-amount">฿${total.toLocaleString()}</span>
+         </div>`
+      : '';
+
+    return `
+      <div class="history-month">
+        <div class="history-month-head">
+          <span class="history-month-label">${formatMonthLabel(h.month)}</span>
+          ${statusHtml}
+        </div>
+        <div class="history-items">${itemsHtml}</div>
+        ${totalHtml}
+      </div>`;
+  }).join('');
+}
 // ============================================================
 //  START
 // ============================================================
