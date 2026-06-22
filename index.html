@@ -13,6 +13,15 @@
 
 <!-- DASHBOARD -->
 <div class="dashboard">
+
+  <button class="btn-history-icon" id="btn-history" onclick="openHistoryOverlay()" aria-label="ดูประวัติการเปิดกล่อง">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+    <path d="M3 3v5h5"></path>
+    <path d="M12 7v5l4 2"></path>
+  </svg>
+</button>
+
   <div class="dash-title">
     <h1>กล่องสุ่มรางวัล</h1>
     <p>สะสมจากการเช็คอินติดต่อกัน</p>
@@ -24,17 +33,18 @@
   </div>
 
   <div class="lb-grid" id="lb-grid">
-  <div class="loading">กำลังโหลด...</div>
-</div>
+    <div class="loading">กำลังโหลด...</div>
+  </div>
 
   <div class="safe-bottom"></div>
 </div>
-  <!-- PAID OVERLAY -->
+
 <div class="paid-overlay" id="paid-overlay">
   <canvas id="paid-canvas"></canvas>
   <div class="paid-box-icon" id="paid-box-icon">🎁</div>
   <div class="paid-result" id="paid-result">
     <div class="paid-res-tier">PAID BONUS</div>
+    <div id="paid-prize-sub" class="paid-prize-sub"></div>
     <div class="paid-prize-val" id="paid-prize-val">0</div>
     <div class="paid-prize-label">BAHT</div>
     <div class="paid-prize-note">ส่วนลดจะถูกหักในบิลเดือนถัดไป</div>
@@ -48,17 +58,14 @@
 <!-- OVERLAY -->
 <div class="lb-overlay" id="lb-overlay">
 
-  <!-- error texts (legend only) -->
   <div class="err-txt" id="err1" style="top:12%;left:8%">FATAL_ERROR: UI_COLLAPSE</div>
   <div class="err-txt" id="err2" style="bottom:14%;right:8%">REBOOTING_SYSTEM...</div>
   <div class="err-txt" id="err3" style="top:20%;right:10%">OVERFLOW_DETECTED</div>
 
-  <!-- spin -->
   <div id="spin-wrap" style="display:flex;align-items:center;justify-content:center">
     <div class="spin-stage" id="spin-stage"></div>
   </div>
 
-  <!-- result -->
   <div class="result-ui" id="result-ui">
     <div class="res-badge" id="res-badge">
       <div class="res-badge-sym">฿</div>
@@ -72,6 +79,26 @@
     </button>
   </div>
 
+</div>
+
+<!-- HISTORY OVERLAY -->
+<div class="history-overlay" id="history-overlay">
+  <div class="history-panel">
+    <div class="history-header">
+      <div class="history-title">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+    <path d="M3 3v5h5"></path>
+    <path d="M12 7v5l4 2"></path>
+  </svg>
+  ประวัติการเปิดกล่อง
+</div>
+      <button class="history-close" onclick="closeHistoryOverlay()" aria-label="ปิด">✕</button>
+    </div>
+    <div class="history-body" id="history-body">
+      <div class="loading">กำลังโหลด...</div>
+    </div>
+  </div>
 </div>
 
 <div class="lb-confetti" id="lb-confetti"></div>
