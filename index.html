@@ -6,11 +6,58 @@
   <title>กล่องสุ่มรางวัล</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <link rel="stylesheet" href="style.css">
+<style>
+  #boot-mask {
+    position: fixed; inset: 0; z-index: 9999;
+    background: #020617;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 20px;
+  }
+  #boot-mask .boot-dots { display: flex; gap: 8px; }
+  #boot-mask .boot-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    animation: bootBounce 1s ease-in-out infinite;
+  }
+  #boot-mask .boot-dot:nth-child(1) { background: #F59E0B; }
+  #boot-mask .boot-dot:nth-child(2) { background: #C084FC; animation-delay: .15s; }
+  #boot-mask .boot-dot:nth-child(3) { background: #F59E0B; animation-delay: .3s; }
+  #boot-mask .boot-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 12px; letter-spacing: 4px;
+    color: #94A3B8;
+    display: flex;
+  }
+  #boot-mask .boot-loading-dots {
+    display: inline-block; width: 18px; text-align: left;
+  }
+  @keyframes bootBounce {
+    0%, 100% { transform: translateY(0); opacity: .5; }
+    50%      { transform: translateY(-10px); opacity: 1; }
+  }
+</style>
 </head>
 <body>
 
+<div id="boot-mask">
+  <div class="boot-dots">
+    <div class="boot-dot"></div>
+    <div class="boot-dot"></div>
+    <div class="boot-dot"></div>
+  </div>
+  <div class="boot-text">LOADING<span class="boot-loading-dots" id="boot-loading-dots"></span></div>
+</div>
+<script>
+(function(){
+  var n = 0;
+  var el = document.getElementById('boot-loading-dots');
+  var iv = setInterval(function(){
+    if (!el || !document.body.contains(el)) { clearInterval(iv); return; }
+    n = (n + 1) % 4;
+    el.textContent = '.'.repeat(n);
+  }, 400);
+})();
+</script>
 <div class="flash" id="flash"></div>
-
 <!-- DASHBOARD -->
 <div class="dashboard">
 
