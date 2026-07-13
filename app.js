@@ -1,5 +1,5 @@
 // ============================================================
-//  กล่องสุ่มรางวัล — app.js (Premium Edition)
+//  กล่องสุ่มรางวัล — app.js (Premium Edition) OK_PRP
 // ============================================================
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbw6QhU3fUwvVO5UdG3qNKRLa4cdx9AIcW9IiJwm65TxfAtwHhsXK--2PG2dXsjWCkJ8/exec';
@@ -142,44 +142,52 @@ async function init() {
   const isPaid = params.get('paid');
   const view   = params.get('view');
 
-  grid.innerHTML = LB_CONFIG.map(() =>
-    `<div class="lb-card lb-skeleton"></div>`
-  ).join('');
-
-  await initLiff();
-
   if (room) {
     document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
   }
 
   if (isPaid !== null) {
+    // ---- PAID PAGE ----
+    document.querySelector('.dash-title h1').textContent = 'กล่องโบนัส';
+    document.querySelector('.dash-title p').textContent  = 'รางวัลจากการจ่ายตรงเวลา';
+    document.querySelector('.count-wrap').style.display  = 'none';
+
+    grid.style.cssText = 'display:flex;justify-content:center;width:90%;max-width:380px';
+    grid.innerHTML = `<div class="lb-card lb-skeleton" style="width:100%;height:290px"></div>`;
+
+    await initLiff();
     await initPaidPage(room);
-  } else if (room) {
-    await loadLootBoxForRoom(room);
-  } else if (token) {
-    await loadLootBoxByToken(token);
-  } else if (liffReady && liff.isLoggedIn() && liffProfile) {
-    await loadLootBoxByUserId(liffProfile.userId);
   } else {
-    showError('❌ ไม่พบข้อมูลห้อง');
+    // ---- CHECK-IN PAGE ----
+    grid.innerHTML = LB_CONFIG.map(() =>
+      `<div class="lb-card lb-skeleton"></div>`
+    ).join('');
+
+    await initLiff();
+
+    if (room) {
+      await loadLootBoxForRoom(room);
+    } else if (token) {
+      await loadLootBoxByToken(token);
+    } else if (liffReady && liff.isLoggedIn() && liffProfile) {
+      await loadLootBoxByUserId(liffProfile.userId);
+    } else {
+      showError('❌ ไม่พบข้อมูลห้อง');
+    }
   }
+
   if (view === 'history' && currentRoomNo) {
     openHistoryOverlay();
   }
+
+  // ✅ ทุกอย่าง render เสร็จแล้ว ค่อยเอา mask ออก
+  document.getElementById('boot-mask')?.remove();
 }
 
 // ============================================================
 //  PAID PAGE
 // ============================================================
 async function initPaidPage(roomNo) {
-  document.querySelector('.dash-title h1').textContent = 'กล่องโบนัส';
-  document.querySelector('.dash-title p').textContent  = 'รางวัลจากการจ่ายตรงเวลา';
-  document.querySelector('.count-wrap').style.display  = 'none';
-
-  const grid = document.getElementById('lb-grid');
-  grid.style.cssText = 'display:flex;justify-content:center;width:90%;max-width:380px';
-  grid.innerHTML = `<div class="lb-card lb-skeleton" style="width:100%;height:290px"></div>`;
-
   if (!roomNo) { showError('❌ ไม่พบข้อมูลห้อง'); return; }
 
   try {
