@@ -1,5 +1,5 @@
 // ============================================================
-//  กล่องสุ่มรางวัล — app.js (Gachapon Edition)
+//  กล่องสุ่มรางวัล — app.js (Gachapon Edition) OK_PRP
 //  UI: ตู้กาชาปอง — logic เชื่อม backend คงเดิม 100% (ไม่สุ่มฝั่ง client)
 // ============================================================
 
@@ -1021,7 +1021,7 @@ function formatMonthLabel(monthKey) {
 
 function getTierMeta(tierRaw) {
   if (String(tierRaw).trim() === 'PAID') {
-    return { name: 'PAID BONUS', color: TIER_COLORS.paid };
+    return { name: 'GACHAPON · BONUS', color: TIER_COLORS.paid };
   }
   const cfg = LB_CONFIG.find(c => c.milestone === Number(tierRaw));
   if (cfg) return { name: cfg.name, color: TIER_COLORS[cfg.tier] };
