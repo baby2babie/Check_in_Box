@@ -1,107 +1,83 @@
 // ============================================================
-//  กล่องสุ่มรางวัล — app.js (Premium Edition) OK_PRP
+//  กล่องสุ่มรางวัล — app.js (Gachapon Edition)
+//  UI: ตู้กาชาปอง — logic เชื่อม backend คงเดิม 100% (ไม่สุ่มฝั่ง client)
 // ============================================================
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbw6QhU3fUwvVO5UdG3qNKRLa4cdx9AIcW9IiJwm65TxfAtwHhsXK--2PG2dXsjWCkJ8/exec';
 const LIFF_ID = '2004478373-pUgVSZTj';
 
+// milestone → ชื่อกาชาปอง (ใช้แสดงในตู้/ป้าย/ประวัติ) — ลำดับนี้คือลำดับที่ stock queue จะเปิดก่อน-หลัง
 const LB_CONFIG = [
-  { milestone: 7,  name: 'กล่องเงิน',      tier: 'silver', ms: 'ms-silver' },
-  { milestone: 14, name: 'กล่องทอง',        tier: 'gold',   ms: 'ms-gold'   },
-  { milestone: 21, name: 'กล่องแพลตินัม',   tier: 'plat',   ms: 'ms-plat'   },
-  { milestone: 28, name: 'กล่องตำนาน',      tier: 'legend', ms: 'ms-legend' },
+  { milestone: 7,  name: 'GACHAPON · SILVER',   tier: 'silver' },
+  { milestone: 14, name: 'GACHAPON · GOLD',     tier: 'gold'   },
+  { milestone: 21, name: 'GACHAPON · PLATINUM', tier: 'plat'   },
+  { milestone: 28, name: 'GACHAPON · LEGEND',   tier: 'legend' },
 ];
+const TIER_COLORS = { silver:'#94A3B8', gold:'#F59E0B', plat:'#A78BFA', legend:'#EF4444', paid:'#C084FC' };
 
-const TIER_CFG = {
-  paid: {
-    color: '#C084FC', label: 'PAID BONUS',
-    shakeClass: 'shake-soft',
-    tensionDur: '3.0s',
-    glitch: false,
-    ringCol: 'rgba(192,132,252,.3)',
-    orbits: [
-      { r:53, dur:1.8, planets:[{col:'#E879F9',sz:6,start:0},{col:'#A5F3FC',sz:4,start:180}] },
-      { r:80, dur:2.8, planets:[{col:'#C084FC',sz:8,start:60},{col:'#FCA5A5',sz:5,start:200},{col:'#A5F3FC',sz:4,start:320}] },
-      { r:103,dur:4.2, planets:[{col:'#E879F9',sz:10,start:90},{col:'#C084FC',sz:5,start:210},{col:'#FCA5A5',sz:4,start:330}] },
-    ],
-    badge:{ bg:'linear-gradient(145deg,#1e0a2e,#120618)', border:'rgba(232,121,249,.4)', glow:'rgba(192,132,252,.35)' },
-    badgeGrad: 'linear-gradient(160deg,#fdf4ff,#E879F9 45%,#7e22ce)',
-    btn:{ bg:'linear-gradient(135deg,#E879F9 0%,#A855F7 100%)', color:'#1a0030', glow:'rgba(232,121,249,.5)' },
-    confetti: ['#E879F9','#C084FC','#A5F3FC','#FCA5A5','#fff','#F0ABFC'],
-  },
-  silver: {
-    color: '#94A3B8', label: 'SILVER RANK',
-    shakeClass: 'shake-soft', tensionDur: '2.6s', glitch: false,
-    ringCol: 'rgba(148,163,184,.3)',
-    orbits: [
-      { r:55, dur:2.2, planets:[{col:'#93D2FF',sz:6,start:0},{col:'#38BFA1',sz:4,start:180}] },
-      { r:82, dur:3.8, planets:[{col:'#93D2FF',sz:8,start:60},{col:'#E9A84C',sz:4,start:220},{col:'#93D2FF',sz:5,start:310}] },
-      { r:105,dur:5.5, planets:[{col:'#93D2FF',sz:10,start:90},{col:'#9B7EE8',sz:4,start:210},{col:'#93D2FF',sz:4,start:330}] },
-    ],
-    badge:{ bg:'linear-gradient(145deg,#0a1a2a,#040c14)', border:'rgba(147,210,255,.5)', glow:'rgba(147,210,255,.4)' },
-    badgeGrad: 'linear-gradient(160deg,#f0f8ff,#93D2FF 45%,#1a5f8a)',
-    btn:{ bg:'linear-gradient(135deg,#475569 0%,#1E293B 100%)', color:'#E2E8F0', glow:'rgba(148,163,184,.4)' },
-    confetti: ['#94A3B8','#CBD5E1','#E2E8F0','#fff','#64748B'],
-  },
-  gold: {
-    color: '#F59E0B', label: 'GOLD RANK',
-    shakeClass: 'shake-mid', tensionDur: '2.8s', glitch: false,
-    ringCol: 'rgba(255,215,0,.32)',
-    orbits: [
-      { r:53, dur:1.6, planets:[{col:'#FFD700',sz:7,start:0},{col:'#38BFA1',sz:4,start:180}] },
-      { r:80, dur:2.8, planets:[{col:'#FFD700',sz:9,start:60},{col:'#E9A84C',sz:5,start:185},{col:'#FF8C00',sz:5,start:305}] },
-      { r:103,dur:4.2, planets:[{col:'#FFD700',sz:12,start:120},{col:'#93D2FF',sz:5,start:240},{col:'#FFD700',sz:5,start:5}] },
-    ],
-    badge:{ bg:'linear-gradient(145deg,#2a1f08,#1a1200)', border:'rgba(255,215,0,.5)', glow:'rgba(255,215,0,.45)' },
-    badgeGrad: 'linear-gradient(160deg,#fffde7,#FFD700 45%,#92400E)',
-    btn:{ bg:'linear-gradient(135deg,#F59E0B 0%,#B45309 100%)', color:'#1C0A00', glow:'rgba(245,158,11,.55)' },
-    confetti: ['#FFD700','#F59E0B','#FEF08A','#fff','#F97316'],
-  },
-  plat: {
-    color: '#A78BFA', label: 'PLATINUM RANK',
-    shakeClass: 'shake-hard', tensionDur: '3.0s', glitch: false,
-    ringCol: 'rgba(167,139,250,.35)',
-    orbits: [
-      { r:51, dur:1.1, planets:[{col:'#A78BFA',sz:7,start:0},{col:'#C084FC',sz:4,start:120},{col:'#E9A84C',sz:3,start:240}] },
-      { r:78, dur:2.0, planets:[{col:'#A78BFA',sz:9,start:45},{col:'#C084FC',sz:6,start:170},{col:'#93D2FF',sz:4,start:285}] },
-      { r:101,dur:3.2, planets:[{col:'#A78BFA',sz:12,start:90},{col:'#C084FC',sz:6,start:205},{col:'#FF5555',sz:4,start:320},{col:'#A78BFA',sz:4,start:5}] },
-    ],
-    badge:{ bg:'linear-gradient(145deg,#150a2a,#0a0618)', border:'rgba(167,139,250,.5)', glow:'rgba(167,139,250,.45)' },
-    badgeGrad: 'linear-gradient(160deg,#faf5ff,#A78BFA 45%,#4c1d95)',
-    btn:{ bg:'linear-gradient(135deg,#A78BFA 0%,#5B21B6 100%)', color:'#F5F3FF', glow:'rgba(167,139,250,.55)' },
-    confetti: ['#A78BFA','#C084FC','#DDD6FE','#fff','#7C3AED'],
-  },
-  legend: {
-    color: '#EF4444', label: 'LEGENDARY RANK',
-    shakeClass: 'shake-chaos', tensionDur: '3.4s', glitch: true,
-    ringCol: 'rgba(255,85,85,.42)',
-    orbits: [
-      { r:50, dur:0.8, planets:[{col:'#FF5555',sz:7,start:0},{col:'#FF8C00',sz:4,start:120},{col:'#FFD700',sz:3,start:240}] },
-      { r:77, dur:1.5, planets:[{col:'#FF5555',sz:10,start:60},{col:'#FF8C00',sz:6,start:185},{col:'#FF5555',sz:5,start:305}] },
-      { r:100,dur:2.4, planets:[{col:'#FF5555',sz:13,start:90},{col:'#FF8C00',sz:7,start:205},{col:'#FFD700',sz:5,start:315},{col:'#FF5555',sz:4,start:20}] },
-    ],
-    badge:{ bg:'linear-gradient(145deg,#2a0808,#180404)', border:'rgba(255,85,85,.6)', glow:'rgba(255,60,60,.5)' },
-    badgeGrad: 'linear-gradient(160deg,#fff1f2,#FF5555 45%,#7f1d1d)',
-    btn:{ bg:'linear-gradient(135deg,#EF4444 0%,#7F1D1D 100%)', color:'#FFF1F2', glow:'rgba(239,68,68,.6)' },
-    confetti: ['#FF5555','#FF8C00','#FCA5A5','#fff','#EF4444'],
-  }
+const stockLabels = {
+  "7": "เช็คอิน 7 วัน", "14": "เช็คอิน 14 วัน", "21": "เช็คอิน 21 วัน", "28": "เช็คอิน 28 วัน",
+  "PAID": "จ่ายตรงเวลา"
 };
 
-let lbOpening   = false;
 let liffReady   = false;
 let liffProfile = null;
 let currentRoomNo = null;
+let currentTierLabel = null;
 
 // ============================================================
 //  UTILS
 // ============================================================
-async function callGAS(action, params = {}) {
-  const res = await fetch(GAS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action, ...params })
-  });
-  return res.json();
+// ============================================================
+//  CACHE (sessionStorage) — เก็บผล render ล่าสุดไว้โชว์ทันทีตอนเปิดแอปรอบถัดไป
+//  (stale-while-revalidate: โชว์ของเก่าก่อนเงียบๆ แล้วค่อยทับด้วยของจริงจาก backend)
+// ============================================================
+const CACHE_MAX_AGE_MS = 30 * 60 * 1000; // เก่าเกิน 30 นาทีไม่ใช้ ป้องกันข้อมูลเพี้ยนนานเกินไป
+
+function cacheKey(mode, param) {
+  return `gacha_cache_${mode}_${param}`;
+}
+
+function saveCacheSnapshot(result) {
+  try {
+    if (!bootMode || !bootParam) return;
+    sessionStorage.setItem(
+      cacheKey(bootMode, bootParam),
+      JSON.stringify({ result, ts: Date.now() })
+    );
+  } catch (e) {
+    // sessionStorage อาจเต็ม/ถูกบล็อก (private mode ฯลฯ) — ไม่ critical ต่อการทำงาน ข้ามไปเฉยๆ
+  }
+}
+
+function tryRenderFromCache(mode, param) {
+  try {
+    const raw = sessionStorage.getItem(cacheKey(mode, param));
+    if (!raw) return false;
+    const { result, ts } = JSON.parse(raw);
+    if (!result || Date.now() - ts > CACHE_MAX_AGE_MS) return false;
+    renderCabinetPreview(result);
+    removeBootMask();
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function callGAS(action, params = {}, timeoutMs = 10000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action, ...params }),
+      signal: ctrl.signal
+    });
+    return await res.json();
+  } finally {
+    clearTimeout(t);
+  }
 }
 
 function showToast(msg, type = 'success', duration = 3000) {
@@ -111,9 +87,15 @@ function showToast(msg, type = 'success', duration = 3000) {
   setTimeout(() => t.className = 'toast', duration);
 }
 
-function showError(msg) {
-  document.getElementById('lb-grid').innerHTML =
-    `<div class="loading" style="color:#EF4444">${msg}</div>`;
+function showError(msg, retryable = false) {
+  instruction.textContent = msg;
+  stockCount.textContent  = '';
+  plateText.textContent   = 'ไม่พร้อมใช้งาน';
+  crank.style.pointerEvents = 'none';
+  crankBase.classList.add('hide-breathe');
+  cabinet.classList.add('cabinet-error'); // หรี่/ลดสีตู้เล็กน้อย ให้รู้สึกว่า "แจ้งเตือน" ไม่ใช่ "ค้าง"
+  updateIdleHints();
+  retryBtn.style.display = retryable ? 'block' : 'none';
 }
 
 // ============================================================
@@ -132,896 +114,897 @@ async function initLiff() {
 }
 
 // ============================================================
-//  INIT
+//  DOM refs (ต้องอยู่หลัง element ใน index.html)
 // ============================================================
-async function init() {
-  const grid   = document.getElementById('lb-grid');
-  const params = new URLSearchParams(window.location.search);
-  const room   = params.get('room');
-  const token  = params.get('token');
-  const isPaid = params.get('paid');
-  const view   = params.get('view');
+const pile           = document.getElementById('pile');
+const crank          = document.getElementById('crank');
+const dropZone       = document.getElementById('dropZone');
+const instruction    = document.getElementById('instruction');
+const stockCount     = document.getElementById('stockCount');
+const overlay        = document.getElementById('overlay');
+const prizeCard      = document.getElementById('prizeCard');
+const resultTierLabel = document.getElementById('resultTierLabel');
+const resultPrize    = document.getElementById('resultPrize');
+const resultNote     = document.getElementById('resultNote');
+const rarityRibbon   = document.getElementById('rarityRibbon');
+const closeBtn       = document.getElementById('closeBtn');
+const cabinet        = document.querySelector('.cabinet');
+const tickRing       = document.getElementById('tickRing');
+const crankGlow      = document.getElementById('crankGlow');
+const screenFlash    = document.getElementById('screenFlash');
+const confettiLayer  = document.getElementById('confettiLayer');
+const idlePulse      = document.getElementById('idlePulse');
+const crankArrow     = document.getElementById('crankArrow');
+const crankBase      = document.querySelector('.crank-base');
+const retryBtn       = document.getElementById('retryBtn');
+const crankWrap      = document.getElementById('crankWrap');
+const cabRoomBadge   = document.getElementById('cabRoomBadge');
+const plateText      = document.getElementById('plateText');
 
-  if (room) {
-    document.getElementById('lb-room-label').textContent = 'ห้อง ' + room;
-  }
+// วงแหวน + จังหวะหายใจ + ลูกศรชี้ที่มือหมุน: โชว์เฉพาะตอนเครื่องว่างและยังมีกล่องให้เปิด
+// เงียบสนิททันทีตอนกำลังหมุน/กำลังลุ้นผล ไม่ใช่หายไปถาวรหลังแตะครั้งแรกอีกต่อไป
+function updateIdleHints(){
+  const shouldShow = !busy && stock.length > 0;
+  idlePulse.classList.toggle('hide', !shouldShow);
+  crankArrow.classList.toggle('hide', !shouldShow);
+  crankBase.classList.toggle('hide-breathe', !shouldShow);
+}
 
-  if (isPaid !== null) {
-    // ---- PAID PAGE ----
-    document.querySelector('.dash-title h1').textContent = 'กล่องโบนัส';
-    document.querySelector('.dash-title p').textContent  = 'รางวัลจากการจ่ายตรงเวลา';
-    document.querySelector('.count-wrap').style.display  = 'none';
+const DOME_FILL = 15;
+const FROST = "#EAF6FB"; // กระจกฝ้าใส ครึ่งบนของลูกแคปซูล — ใช้เป็นสีฐานของทุกลูกเหมือนกันหมด
+const NEW_PALETTE = [
+  { main:"#F2941A", shine:"#FFCB80" }, // ส้ม
+  { main:"#2E9E4F", shine:"#8FE3A8" }, // เขียว
+  { main:"#2E7FD1", shine:"#8FC4F5" }, // น้ำเงิน
+  { main:"#29ABE2", shine:"#9FE0F5" }, // ฟ้า
+  { main:"#C1372C", shine:"#E8703F" }, // แดง
+  { main:"#F2C230", shine:"#FFE58A" }, // เหลือง
+  { main:"#8B5CF6", shine:"#C4B5FD" }, // ม่วง
+  { main:"#E64980", shine:"#FFB8D2" }, // ชมพู
+];
+const CAPSULE_NUMBERS = [20, 30, 40, 50, 60, 70, 80, 100];
 
-    grid.style.cssText = 'display:flex;justify-content:center;width:90%;max-width:380px';
-    grid.innerHTML = `<div class="lb-card lb-skeleton" style="width:100%;height:290px"></div>`;
+// สร้าง background ทรงกลม "แคปซูลน้ำ" 2 โทน — ครึ่งบนกระจกใส ครึ่งล่างสีสันเข้ม
+// พร้อมเส้นไฮไลต์บางๆ ตรงระดับน้ำ + แสงเงาวาวมุมบนซ้าย เลียนแบบภาพตัวอย่าง
+// angleDeg คือมุมของเส้นแบ่งกระจก/สี — ปรับต่อลูกให้ไม่เท่ากัน จำลองว่าแต่ละลูกถูกมองจากมุมกล้อง/องศาเอียงคนละแบบ
+function gachaBallBg(mainColor, shineColor, levelPct, angleDeg){
+  const lvl = levelPct;
+  const ang = angleDeg;
+  return [
+    `radial-gradient(circle at 30% 20%, rgba(255,255,255,.95), rgba(255,255,255,0) 40%)`,
+    `linear-gradient(${ang}deg, transparent 0%, transparent ${lvl-4}%, ${shineColor} ${lvl-4}%, ${shineColor} ${lvl-1}%, rgba(0,0,0,.16) ${lvl-1}%, rgba(0,0,0,.16) ${lvl+0.6}%, transparent ${lvl+0.6}%, transparent 100%)`,
+    `linear-gradient(${ang}deg, ${FROST} 0%, ${FROST} ${lvl}%, ${mainColor} ${lvl}%, ${mainColor} 100%)`
+  ].join(', ');
+}
 
-    await initLiff();
-    await initPaidPage(room);
-  } else {
-    // ---- CHECK-IN PAGE ----
-    grid.innerHTML = LB_CONFIG.map(() =>
-      `<div class="lb-card lb-skeleton"></div>`
-    ).join('');
+// ชั้นเปลือกทึบสี วางทับ "บนสุด" เหนือตั๋วอีกที — ใช้ angle/level ตัวเดียวกับพื้นหลังลูกเป๊ะ (รวมเส้นไฮไลต์ระดับน้ำด้วย)
+// เพื่อให้ส่วนทึบของแคปซูลบังตั๋วที่จมอยู่ใต้เส้นระดับน้ำไว้จริง เนียนสนิทไปกับพื้นหลังลูก ไม่ใช่สี่เหลี่ยมสีทึบลอยๆ
+function gachaBallShellTop(mainColor, shineColor, levelPct, angleDeg){
+  const lvl = levelPct;
+  const ang = angleDeg;
+  return [
+    `linear-gradient(${ang}deg, transparent 0%, transparent ${lvl-4}%, ${shineColor} ${lvl-4}%, ${shineColor} ${lvl-1}%, rgba(0,0,0,.16) ${lvl-1}%, rgba(0,0,0,.16) ${lvl+0.6}%, transparent ${lvl+0.6}%, transparent 100%)`,
+    `linear-gradient(${ang}deg, transparent 0%, transparent ${lvl}%, ${mainColor} ${lvl}%, ${mainColor} 100%)`
+  ].join(', ');
+}
 
-    await initLiff();
+// องศาเส้นแบ่งที่เป็นไปได้ — ผสมทั้งเกือบตั้ง (มองจากด้านข้าง/มุมสูง เห็นตั๋วเกือบเต็ม) และเกือบนอน (มองตรง)
+const SPLIT_ANGLES = [95, 120, 150, 175, 195, 220, 255, 280];
 
-    if (room) {
-      await loadLootBoxForRoom(room);
-    } else if (token) {
-      await loadLootBoxByToken(token);
-    } else if (liffReady && liff.isLoggedIn() && liffProfile) {
-      await loadLootBoxByUserId(liffProfile.userId);
+function hexToRgba(hex, alpha){
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0,2), 16);
+  const g = parseInt(h.substring(2,4), 16);
+  const b = parseInt(h.substring(4,6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// stock = milestone keys (string) ที่มีกล่องเปิดได้จริงตอนนี้ เรียงตามลำดับที่จะเปิด
+// lootTokens = { "7": token, "PAID": token, ... } token จริงจาก backend สำหรับแต่ละ milestone
+let stock = [];
+let lootTokens = {};
+let busy = true; // true จนกว่าจะโหลดข้อมูลจริงเสร็จ
+
+function renderPile(){
+  pile.innerHTML = "";
+  const hasPaid = stock.includes('PAID');
+  const paidIndex = hasPaid ? Math.floor(Math.random() * DOME_FILL) : -1;
+  for(let i = 0; i < DOME_FILL; i++){
+    const c = document.createElement('div');
+    c.className = 'capsule';
+
+    const size = 34 + Math.random() * 24;
+    const left = Math.random() * 78;
+    const top = 26 + Math.pow(Math.random(), 1.7) * 70;
+    const rot = (Math.random() * 34 - 17).toFixed(1);
+
+    c.style.width = size + "px";
+    c.style.height = size + "px";
+    c.style.left = left + "%";
+    c.style.top = top + "%";
+    c.style.setProperty('--rot', rot + 'deg');
+    c.style.transform = `rotate(var(--rot))`;
+    c.style.zIndex = Math.round(top * 10 + size);
+    c.style.animationDelay = (Math.random() * 120) + 'ms';
+
+    if(i === paidIndex){
+      c.classList.add('shimmer');
     } else {
-      showError('❌ ไม่พบข้อมูลห้อง');
+      const col = NEW_PALETTE[Math.floor(Math.random()*NEW_PALETTE.length)];
+      const angle = SPLIT_ANGLES[Math.floor(Math.random()*SPLIT_ANGLES.length)] + (Math.random() * 14 - 7);
+      const level = 26 + Math.random() * 40; // ระดับน้ำสีในลูกไม่เท่ากัน บางลูกมุมสูงเห็นตั๋วเกือบเต็ม บางลูกสีเยอะกว่า เหมือนของจริง
+      c.style.background = gachaBallBg(col.main, col.shine, level, angle);
+
+      // ลำดับชั้นแบบแคปซูลจริง: (1) ฝาใส/พื้นหลังลูก อยู่ล่างสุด (2) ตั๋ว อยู่ตรงกลาง (3) เปลือกทึบสี อยู่บนสุด
+      // ทำให้ส่วนทึบบังตั๋วที่จมอยู่ใต้เส้นระดับน้ำไว้จริง เห็นตั๋วแค่ผ่านฝาใสเท่านั้น
+      // ดันตำแหน่งตั๋วเข้าไปทาง "ฝั่งฝาใส" ตามสัดส่วนพื้นที่สีของลูกนั้นๆ ให้ตั๋วอยู่ในโซนใสเป็นหลักเสมอ (เห็นตั๋วเกือบเต็มใบแบบภาพตัวอย่าง)
+      const splitTilt = angle - 180;
+      const tilt = (splitTilt * 0.4 + (Math.random() * 10 - 5)).toFixed(1);
+      const ticketRotation = Number((-rot * 1 + Number(tilt)).toFixed(1));
+      const rad = angle * Math.PI / 180;
+      const clearDirX = -Math.sin(rad);
+      const clearDirY = Math.cos(rad);
+      const pushPct = Math.min(15, Math.max(0, (level - 32) * 0.34));
+      const offX = (clearDirX * pushPct + (Math.random() * 6 - 3)).toFixed(1);
+      const offY = (clearDirY * pushPct + (Math.random() * 6 - 3)).toFixed(1);
+      const ticket = document.createElement('div');
+      ticket.className = 'capsule-ticket';
+      // ขนาดตั๋วพอดีลูก ไม่ใหญ่จนล้น ไม่เล็กจนดูลอย — ลูกใหญ่ตั๋วขยับสัดส่วนลงนิดหน่อยให้ดูเนียนตา
+      const ticketWidthFactor = 0.68 + Math.random() * 0.12 - Math.min(0.05, size / 3400);
+      ticket.style.width = (size * ticketWidthFactor) + 'px';
+      ticket.style.borderRadius = (size * 0.06) + 'px';
+      ticket.style.padding = (size * 0.03) + 'px 0';
+      ticket.style.left = (50 + Number(offX)) + '%';
+      ticket.style.top = (50 + Number(offY)) + '%';
+      ticket.style.transform = `translate(-50%,-50%) rotate(${ticketRotation}deg)`;
+      ticket.style.border = (size * 0.016 + 1) + 'px solid ' + hexToRgba(col.main, .55);
+      const sparkSize = (size * ticketWidthFactor * 0.15).toFixed(1);
+      ticket.innerHTML =
+        `<span class="capsule-ticket-spark" style="top:5%;left:6%;font-size:${sparkSize}px;color:${col.main}">✦</span>` +
+        `<div class="capsule-ticket-label" style="font-size:${(size * 0.105).toFixed(1)}px">ส่วนลด</div>` +
+        `<div class="capsule-ticket-amount" style="font-size:${(size * 0.255).toFixed(1)}px;color:${col.main}">${CAPSULE_NUMBERS[Math.floor(Math.random()*CAPSULE_NUMBERS.length)]}</div>` +
+        `<div class="capsule-ticket-unit" style="font-size:${(size * 0.095).toFixed(1)}px">บาท</div>` +
+        `<span class="capsule-ticket-spark" style="bottom:5%;right:6%;font-size:${sparkSize}px;color:${col.main}">✦</span>`;
+      c.appendChild(ticket);
+
+      // เปลือกทึบสีวางทับตั๋วอีกที (เลเยอร์บนสุด) — ใช้ angle/level เดียวกับพื้นหลังลูกเป๊ะ
+      const shell = document.createElement('div');
+      shell.className = 'capsule-shell-top';
+      shell.style.background = gachaBallShellTop(col.main, col.shine, level, angle);
+      c.appendChild(shell);
+
+      // ชั้นแสงสะท้อนกระจกทับหน้าตั๋วอีกที ให้ตั๋วดูเหมือนอยู่ลึกเข้าไปหลังผิวโค้งใส ไม่ใช่แปะลอยอยู่หน้าลูก
+      const shine = document.createElement('div');
+      shine.className = 'capsule-glass-shine';
+      c.appendChild(shine);
+
+      // เงาขอบโค้งทึบของเปลือกแคปซูล ทับบนสุด — ทำให้ตั๋วส่วนที่ชิดขอบดูจางลง/มืดลงเหมือนถูกความหนาของเปลือกบัง
+      const rimShade = document.createElement('div');
+      rimShade.className = 'capsule-rim-shade';
+      c.appendChild(rimShade);
     }
+    pile.appendChild(c);
   }
+  stockCount.textContent = stock.length ? `เปิดได้อีก ${stock.length} ลูก` : `ไม่มีกาชาปองให้เปิดตอนนี้`;
+}
 
-  if (view === 'history' && currentRoomNo) {
-    openHistoryOverlay();
+function rarityOf(amount){
+  if(amount >= 30) return 'legendary';
+  if(amount >= 15) return 'rare';
+  return 'common';
+}
+
+function boxNameFor(milestone){
+  if(milestone === 'PAID') return 'GACHAPON · BONUS';
+  const cfg = LB_CONFIG.find(c => c.milestone === Number(milestone));
+  return cfg ? cfg.name : 'GACHAPON · MYSTERY';
+}
+
+function updatePlateText(){
+  plateText.textContent = stock.length ? boxNameFor(stock[0]) : 'เปิดครบแล้วตอนนี้';
+}
+
+function spawnRatchetTicks(){
+  const TICK_COUNT = 10;
+  for(let i=0;i<TICK_COUNT;i++){
+    const t = document.createElement('div');
+    t.className = 'ratchet-tick';
+    const angle = (360 / TICK_COUNT) * i;
+    t.style.setProperty('--tick-angle', `${angle}deg`);
+    t.style.animationDelay = (i * 45) + 'ms';
+    tickRing.appendChild(t);
+    requestAnimationFrame(()=> t.classList.add('go'));
+    setTimeout(()=> t.remove(), 700);
   }
+}
 
-  // ✅ ทุกอย่าง render เสร็จแล้ว ค่อยเอา mask ออก
-  document.getElementById('boot-mask')?.remove();
+function jigglePile(){
+  pile.classList.remove('jiggle');
+  void pile.offsetWidth;
+  pile.classList.add('jiggle');
 }
 
 // ============================================================
-//  PAID PAGE
+//  กันไม่ให้ค้างตลอดไปถ้า backend ไม่ตอบเลย
+//  สำคัญ: 8 วิแรกเป็นแค่ "แจ้งเตือนว่าช้า" ไม่ใช่การยกเลิกจริง — request จริงยังทำงานต่อเบื้องหลัง
+//  แล้วผลจริงจะถูกใช้ทันทีที่ backend ตอบกลับมา (ป้องกัน token เพี้ยนจากการ retry ซ้ำทั้งที่ backend เปิดกล่องไปแล้ว)
+//  จะขึ้น hard-fail (ซิงค์ข้อมูลใหม่จาก server ให้อัตโนมัติ ไม่ต้องปิดแอปเอง) ก็ต่อเมื่อรอนานเกิน HARD_TIMEOUT_MS จริงๆ เท่านั้น
 // ============================================================
-async function initPaidPage(roomNo) {
-  if (!roomNo) { showError('❌ ไม่พบข้อมูลห้อง'); return; }
-
-  try {
-    const result = await callGAS('getLootBoxDataByRoom', { roomNo });
-    if (!result.success) { showError('❌ ' + (result.message || 'โหลดไม่ได้')); return; }
-    currentRoomNo = roomNo;
-    showHistoryButton();
-    renderPaidCard((result.boxes || {})['PAID'] || {});
-  } catch (e) {
-    showError('❌ โหลดข้อมูลไม่ได้ กรุณาลองใหม่ครับ');
-  }
+function withTimeout(promise, ms, fallback){
+  return Promise.race([
+    promise,
+    new Promise(resolve => setTimeout(()=> resolve(fallback), ms))
+  ]);
 }
 
-function renderPaidCard(info) {
-  const grid     = document.getElementById('lb-grid');
-  const hasBox   = info.token && !info.opened;
-  const isOpened = info.token &&  info.opened;
-  const isLocked = !info.token;
+// ============================================================
+//  OPEN LOOT BOX — เรียก backend จริง ไม่สุ่มฝั่ง client
+// ============================================================
+function playOpen(){
+  if(busy) return;
+  if(stock.length === 0){ instruction.textContent = "ไม่มีกาชาปองให้เปิดแล้วตอนนี้"; return; }
+  busy = true;
+  updateIdleHints();
+  crank.classList.add('turn');
+  cabinet.classList.remove('rumble'); void cabinet.offsetWidth; cabinet.classList.add('rumble');
+  crankWrap.classList.remove('rumble'); void crankWrap.offsetWidth; crankWrap.classList.add('rumble');
+  pile.classList.remove('jiggle'); void pile.offsetWidth; pile.classList.add('jiggle');
+  spawnRatchetTicks();
+  crankGlow.classList.remove('go'); void crankGlow.offsetWidth; crankGlow.classList.add('go');
+  instruction.textContent = "";
 
-  const card = document.createElement('div');
-  card.className = 'lb-card'
-    + (hasBox   ? ' can-open' : '')
-    + (isOpened ? ' used'     : '')
-    + (isLocked ? ' locked'   : '');
-  card.id = 'lb-card-PAID';
-  card.setAttribute('data-tier', 'paid');
-  card.style.cssText = 'width:100%;padding:40px 20px;--t-color:#C084FC';
+  const milestone = stock[0];
+  const token = lootTokens[milestone];
 
-  card.innerHTML = `
-    <span class="lb-card-icon" style="font-size:64px">${
-      isOpened ? '🎁' : hasBox ? '🎁' : '🔒'
-    }</span>
-    <div class="lb-card-name" style="font-size:16px;margin-top:16px">PAID BONUS</div>
-    <div class="lb-card-sub" style="font-size:14px;margin-top:8px">${
-      hasBox   ? 'กดเพื่อเปิดกล่อง!' :
-      isOpened ? 'เปิดแล้วเดือนนี้'  :
-                 'จ่ายตรงเวลาเพื่อรับกล่อง'
-    }</div>
-    <div class="lb-card-ms ms-paid" style="margin-top:16px">จ่ายตรงเวลา</div>
-  `;
+  // request จริง — ไม่ถูกยกเลิกแม้ผู้ใช้จะเห็น UI แจ้งว่า "ช้า" แล้วก็ตาม
+  // timeout ยาวกว่า HARD_TIMEOUT_MS ด้านล่าง เพราะที่นี่ตั้งใจปล่อยให้ request จริงทำงานต่อเบื้องหลัง
+  // ไม่อยากให้ callGAS ไป abort ตัด request ทิ้งก่อนที่ logic soft/hard timeout ด้านล่างจะได้ทำงานตามที่ออกแบบไว้
+    const realPromise = callGAS('openLootBox', { token, tierLabel: currentTierLabel }, 30000).catch((err) => {
+    // เก็บ error จริงไว้ดูใน console เพื่อวินิจฉัยสาเหตุ (network ล่ม / CORS / parse JSON ไม่ได้ ฯลฯ)
+    // ส่วนข้อความที่โชว์ผู้ใช้เอาไว้แค่บอกว่าต่อไม่ติด ไม่ต้องมีรายละเอียดทางเทคนิค
+    console.error('openLootBox failed:', err);
+    return { success:false, message:'เชื่อมต่อกับระบบไม่สำเร็จ' };
+  });
 
-  if (hasBox) {
-    card.onclick = () => startLootOpen('PAID', 'กล่อง Paid Bonus', 'paid', info.token);
+  const SOFT_TIMEOUT_MS = 4000;
+  const HARD_TIMEOUT_MS = 12000;
+  const softTimer = setTimeout(()=>{
+    if(busy) instruction.textContent = "เชื่อมต่อช้ากว่าปกติ กำลังรอผลอยู่...";
+  }, SOFT_TIMEOUT_MS);
+  realPromise.finally(()=> clearTimeout(softTimer));
+
+  const apiPromise = withTimeout(
+    realPromise,
+    HARD_TIMEOUT_MS,
+    { success:false, message:'ระบบช้าผิดปกติ กำลังซิงค์ข้อมูลใหม่ให้อัตโนมัติ', hardFail:true }
+  );
+
+  setTimeout(()=>{
+    crank.classList.remove('turn');
+    cabinet.classList.remove('rumble');
+    crankWrap.classList.remove('rumble');
+    pile.classList.remove('jiggle');
+    dropCapsule(milestone, apiPromise);
+  }, 780);
+}
+
+function dropCapsule(milestone, apiPromise){
+  const isPaid = milestone === 'PAID';
+  const col = NEW_PALETTE[Math.floor(Math.random()*NEW_PALETTE.length)];
+  const angle = SPLIT_ANGLES[Math.floor(Math.random()*SPLIT_ANGLES.length)] + (Math.random() * 14 - 7);
+  const capsuleBg = isPaid
+    ? gachaBallBg('#B4822A', '#F5DFA0', 35 + Math.random()*30, angle)
+    : gachaBallBg(col.main, col.shine, 35 + Math.random()*30, angle);
+
+  const falling = document.createElement('div');
+  falling.className = 'falling-capsule drop';
+  falling.style.background = capsuleBg;
+  dropZone.appendChild(falling);
+  jigglePile();
+
+  setTimeout(()=>{
+    launchCapsuleFullscreen(falling, capsuleBg, milestone, apiPromise, isPaid);
+  }, 700);
+}
+
+// ============================================================
+//  แคปซูลเด้งขึ้นบังจอเต็มที่ ค้างลุ้นผลจาก backend
+//  แล้วแตกออกเป็น 2 ซีก เผยป้ายรางวัล (overlay เดิม)
+// ============================================================
+let megaShakeTimers = [];
+
+// ============================================================
+//  รอยร้าวเปลือกแคปซูลใบใหญ่แบบ "กำลังจะฟักออกมา" (เส้นเดียว ไม่ใช่ใยแมงมุม)
+//  ทรงรอยร้าวเป็น filled polygon เรียวธรรมชาติจริง (ไม่ใช่ stroke ความหนาคงที่)
+//  สั่นครั้งที่ 1: รอยร้าวหลักโผล่ ยังไม่มีแสง — สั่นครั้งที่ 2: ขยายตัว+แตกฝอย+เริ่มมีแสง
+//  สั่นครั้งที่ 3-4: แสงจ้าขึ้นเรื่อยๆ ก่อนมีชนวนแสงวิ่งพุ่งแล้ววาบสุดตอนแตกออกจริง
+// ============================================================
+const MEGA_CRACK_SHAPES = {
+  // รอยร้าวหลัก (ทรงเรียวสองข้าง หนาตรงกลาง) + กิ่งแยกขึ้นบน — รวมเป็น 1 shape ต่อเนื่อง
+  1: {
+    fills: [
+      "M27,58 L35,52.1 L31,47.7 L41,43.4 L49,45.7 L57,41.9 L64,45.7 L71,42.1 L78,49 L71,43.9 L64,48.3 L57,44.1 L49,48.3 L41,46.6 L31,50.3 L35,53.9 Z",
+      "M57,41.9 L53,32.4 L56,24 L53,33.6 L57,44.1 Z"
+    ],
+    cores: [
+      "M27,58 L35,53 L31,49 L41,45 L49,47 L57,43 L64,47 L71,43 L78,49",
+      "M57,43 L53,33 L56,24"
+    ]
+  },
+  // รอยร้าวขยายตัว: ปลายทั้งสองข้างยืดออกไปอีก + แตกกิ่งใหม่เล็กตรงกลาง (ทรงเรียวเช่นกัน)
+  2: {
+    fills: [
+      "M78,49 L81.5,50.6 L85,53 L81.5,51.4 Z",
+      "M56,24 L57.5,20.3 L59,16 L57,20.5 Z",
+      "M41,45 L38.2,41.9 L36,38 L38.8,41.1 Z"
+    ],
+    cores: []
   }
+};
+// รอยแตกฝอยบางๆ แซมรอบรอยร้าวหลัก โผล่พร้อมสั่นครั้งที่ 2 ให้ดูเป็นธรรมชาติเหมือนเปลือกไข่จริง
+const MEGA_CRACK_HAIRLINES = ["M31,49 L28,53", "M64,47 L67,40", "M53,33 L48,30"];
 
-  // ✅ wrap + border trace canvas
+function createMegaCrack(){
   const wrap = document.createElement('div');
-  wrap.style.cssText = 'position:relative;width:100%';
-
-  if (hasBox) {
-    const cv = document.createElement('canvas');
-    cv.id = 'paid-trace';
-    cv.style.cssText = 'position:absolute;inset:-3px;pointer-events:none;z-index:3;border-radius:27px';
-    wrap.appendChild(cv);
+  wrap.className = 'mega-crack';
+  let svgBody = '';
+  for(const lvl of [1,2]){
+    MEGA_CRACK_SHAPES[lvl].fills.forEach(d=>{
+      svgBody += `<path class="crack-shadow lvl${lvl}" d="${d}"/>`;
+      svgBody += `<path class="crack-glow lvl${lvl}" d="${d}"/>`;
+    });
+    MEGA_CRACK_SHAPES[lvl].cores.forEach(d=>{
+      svgBody += `<path class="crack-core lvl${lvl}" pathLength="100" d="${d}"/>`;
+    });
   }
-
-  wrap.appendChild(card);
-  grid.innerHTML = '';
-  grid.appendChild(wrap);
-
-  setTimeout(() => {
-    card.classList.add('fade-in');
-    if (hasBox) initPaidTrace('paid-trace', wrap);
-  }, 300);
+  MEGA_CRACK_HAIRLINES.forEach(d=>{
+    svgBody += `<path class="crack-hairline lvl2" pathLength="100" d="${d}"/>`;
+  });
+  wrap.innerHTML = `<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">${svgBody}</svg>`;
+  return wrap;
 }
 
+// วงคลื่นกระแทกขยายออกจากลูกแคปซูล ให้ความรู้สึกอลังการตอนกระแทกแต่ละจังหวะ
+function spawnShockwaveRing(mega, big){
+  const rect = mega.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const ring = document.createElement('div');
+  ring.className = 'mega-ring' + (big ? ' big' : '');
+  const size = rect.width * (big ? 1.15 : 0.92);
+  ring.style.left = cx + 'px';
+  ring.style.top = cy + 'px';
+  ring.style.width = size + 'px';
+  ring.style.height = size + 'px';
+  document.body.appendChild(ring);
+  setTimeout(()=> ring.remove(), big ? 950 : 650);
+}
+
+// สะเก็ดแสงกระเด็นออกจากบริเวณรอยร้าวตอนกระแทกแต่ละจังหวะ (ตำแหน่ง % อ้างอิงตาม viewBox 0-100)
+function spawnCrackSparks(mega, count){
+  for(let i=0;i<count;i++){
+    const s = document.createElement('div');
+    s.className = 'crack-spark';
+    const px = 45 + (Math.random()*22 - 11);
+    const py = 45 + (Math.random()*14 - 7);
+    s.style.left = px + '%';
+    s.style.top  = py + '%';
+    const ang = Math.random()*Math.PI*2;
+    const dist = 8 + Math.random()*14;
+    s.style.setProperty('--dx', Math.cos(ang)*dist + 'px');
+    s.style.setProperty('--dy', Math.sin(ang)*dist + 'px');
+    s.style.animationDelay = (Math.random()*0.05) + 's';
+    mega.appendChild(s);
+    setTimeout(()=> s.remove(), 650);
+  }
+}
+
+// สะเก็ดแสงตอนแตกจริง — วางตำแหน่งอิงพิกัดหน้าจอ (ไม่ใช่ลูกของ mega) เพราะ mega จะถูกลบทิ้งเร็วกว่าที่แอนิเมชันจะเล่นจบ
+function spawnBurstSparks(mega, count){
+  const rect = mega.getBoundingClientRect();
+  for(let i=0;i<count;i++){
+    const s = document.createElement('div');
+    s.className = 'crack-spark';
+    s.style.position = 'fixed';
+    s.style.left = (rect.left + rect.width * (0.34 + Math.random()*0.32)) + 'px';
+    s.style.top  = (rect.top + rect.height * (0.34 + Math.random()*0.24)) + 'px';
+    const ang = Math.random()*Math.PI*2;
+    const dist = 16 + Math.random()*28;
+    s.style.setProperty('--dx', Math.cos(ang)*dist + 'px');
+    s.style.setProperty('--dy', Math.sin(ang)*dist + 'px');
+    s.style.animationDelay = (Math.random()*0.05) + 's';
+    document.body.appendChild(s);
+    setTimeout(()=> s.remove(), 700);
+  }
+}
+
+function launchCapsuleFullscreen(fallingEl, capsuleBg, milestone, apiPromise, isPaid){
+  const rect = fallingEl.getBoundingClientRect();
+  fallingEl.remove();
+
+  const dim = document.createElement('div');
+  dim.className = 'mega-dim';
+  document.body.appendChild(dim);
+  requestAnimationFrame(()=> dim.classList.add('on'));
+
+  // แสงรัศมีหมุนรอบจอ เพิ่มความอลังการตอนพลังสะสมก่อนแตก
+  const megaRays = document.createElement('div');
+  megaRays.className = 'mega-rays';
+  document.body.appendChild(megaRays);
+
+  const mega = document.createElement('div');
+  mega.className = 'mega-capsule';
+  mega.style.background = capsuleBg;
+  mega.style.left   = rect.left + 'px';
+  mega.style.top    = rect.top + 'px';
+  mega.style.width  = rect.width + 'px';
+  mega.style.height = rect.height + 'px';
+  document.body.appendChild(mega);
+
+  // แสงระยิบระยับลอยรอบลูก แทนป้ายตั๋ว — ไม่มีข้อความ/ตัวเลขใดๆ ให้เห็นก่อนผลจริง
+  const megaSparkles = document.createElement('div');
+  megaSparkles.className = 'mega-sparkles';
+  const SPARKLE_COUNT = 10;
+  const sparkleSpecs = Array.from({length: SPARKLE_COUNT}, (_, i) => ({
+    angle: (360 / SPARKLE_COUNT) * i + (Math.random() * 22 - 11),
+    radius: 42 + Math.random() * 14,
+    glyph: Math.random() > 0.5 ? '✦' : '✧',
+    delay: (Math.random() * 1.4).toFixed(2),
+    duration: (0.9 + Math.random() * 0.9).toFixed(2)
+  }));
+
+  requestAnimationFrame(()=>{
+    mega.style.transition = 'left .85s cubic-bezier(.22,1.6,.4,1), top .85s cubic-bezier(.22,1.6,.4,1), width .85s cubic-bezier(.22,1.6,.4,1), height .85s cubic-bezier(.22,1.6,.4,1), box-shadow .45s ease-out';
+    const size = Math.min(window.innerWidth, window.innerHeight) * 0.8;
+    mega.style.left   = (window.innerWidth / 2 - size / 2) + 'px';
+    mega.style.top    = (window.innerHeight / 2 - size / 2) + 'px';
+    mega.style.width  = size + 'px';
+    mega.style.height = size + 'px';
+
+    sparkleSpecs.forEach(spec => {
+      const rad = spec.angle * Math.PI / 180;
+      const star = document.createElement('div');
+      star.className = 'mega-sparkle';
+      star.textContent = spec.glyph;
+      star.style.left = (50 + Math.cos(rad) * spec.radius) + '%';
+      star.style.top  = (50 + Math.sin(rad) * spec.radius) + '%';
+      star.style.fontSize = (size * (0.07 + Math.random() * 0.05)).toFixed(1) + 'px';
+      star.style.animationDelay = spec.delay + 's';
+      star.style.animationDuration = spec.duration + 's';
+      megaSparkles.appendChild(star);
+    });
+    mega.appendChild(megaSparkles);
+  });
+
+  // รอยร้าวแบบเปลือกไข่กำลังฟัก ค่อยๆ ลามทีละระดับตอนเขย่าแต่ละครั้ง
+  const megaCrack = createMegaCrack();
+  mega.appendChild(megaCrack);
+
+  // สั่นตามจังหวะเดิม 4 ครั้งแรก (950/1500/2200/2900ms) แล้ว "วนต่อ" ที่ระดับแสงจ้าสุดทุกๆ 700ms
+  // ไปเรื่อยๆ จนกว่าผลจริงจาก backend จะมาถึง — กันไม่ให้ลูกนิ่งค้างเงียบถ้า backend ตอบช้ากว่า 2.9 วิ
+  // (เดิมมีแค่ 4 จังหวะตายตัว พอ backend ช้ากว่านั้นลูกจะหยุดสั่นเฉยๆ แล้วเหมือนค้างจนกว่าผลจะมา)
+  const SHAKE_GAPS_MS = [950, 550, 700, 700]; // ดีเลย์เริ่มต้น แล้วช่วงห่างระหว่างครั้งที่ 1→2, 2→3, 3→4
+  const SHAKE_LOOP_GAP_MS = 700; // ช่วงห่างของทุกครั้งถัดจากนั้น วนไปเรื่อยๆ
+  let shakeIndex = 0;
+  function scheduleNextShake(delay){
+    const t = setTimeout(()=>{
+      const i = shakeIndex++;
+      // จังหวะพลังพุ่งวาบมืดสลัวลงเสี้ยววินาทีก่อนกระแทก แล้วสว่างกลับ ให้ความรู้สึกทรงพลัง
+      dim.classList.add('surge');
+      setTimeout(()=> dim.classList.remove('surge'), 110);
+
+      mega.classList.remove('mega-shake'); void mega.offsetWidth; mega.classList.add('mega-shake');
+      spawnCrackSparks(mega, Math.min(3 + i, 10));
+      spawnShockwaveRing(mega, false);
+      setTimeout(()=>{
+        if(i === 0){
+          // สั่นครั้งที่ 1: รอยร้าวหลักโผล่แบบธรรมชาติ ยังไม่มีแสง
+          megaCrack.querySelectorAll('.crack-shadow.lvl1').forEach(p => p.classList.add('show'));
+        } else if(i === 1){
+          // สั่นครั้งที่ 2: รอยร้าวขยายตัว/แตกฝอยเพิ่ม พร้อมเริ่มมีแสงจ้าเรืองออกมา
+          megaCrack.querySelectorAll('.crack-shadow.lvl2, .crack-hairline').forEach(p => p.classList.add('show'));
+          megaCrack.classList.add('glow-1');
+          mega.classList.add('glow-1');
+          megaRays.classList.add('glow-1');
+        } else if(i === 2){
+          // สั่นครั้งที่ 3: แสงสว่างมากขึ้น
+          megaCrack.classList.remove('glow-1'); megaCrack.classList.add('glow-2');
+          mega.classList.remove('glow-1'); mega.classList.add('glow-2');
+          megaRays.classList.remove('glow-1'); megaRays.classList.add('glow-2');
+        } else {
+          // สั่นครั้งที่ 4 เป็นต้นไป: ค้างที่แสงจ้าสุด (glow-3) แล้วสั่นวนซ้ำไปเรื่อยๆ จนกว่าผลจะมาถึงจริง
+          megaCrack.classList.remove('glow-2'); megaCrack.classList.add('glow-3');
+          mega.classList.remove('glow-2'); mega.classList.add('glow-3');
+          megaRays.classList.remove('glow-2'); megaRays.classList.add('glow-3');
+        }
+      }, 90);
+
+      const nextDelay = i + 1 < SHAKE_GAPS_MS.length ? SHAKE_GAPS_MS[i + 1] : SHAKE_LOOP_GAP_MS;
+      scheduleNextShake(nextDelay);
+    }, delay);
+    megaShakeTimers.push(t);
+  }
+  scheduleNextShake(SHAKE_GAPS_MS[0]);
+
+  const MIN_LAUNCH_MS = 950; // กันไว้ให้เห็นจังหวะเด้งบังจอเต็มที่ก่อนเสมอ แม้ backend จะตอบเร็วกว่านี้
+  setTimeout(async ()=>{
+    const result = await apiPromise;
+
+    megaShakeTimers.forEach(t => clearTimeout(t));
+    megaShakeTimers = [];
+
+    splitCapsuleOpen(mega, dim, megaCrack, megaRays, ()=>{
+      dropZone.innerHTML = "";
+
+      if(!result || !result.success){
+  if(result && result.hardFail){
+    showToast('⏳ ระบบช้าผิดปกติ กำลังซิงค์ข้อมูลให้อัตโนมัติ...', 'error', 4000);
+  } else {
+    showErrorCard(result && result.message);
+  }
+  instruction.textContent = "🔄 กำลังซิงค์ข้อมูลใหม่...";
+  const attemptedMilestone = milestone;
+  const attemptedIsPaid = isPaid;
+
+  reloadLootBoxData().then(async ()=>{
+    if(!stock.includes(attemptedMilestone)){
+      // กล่องนี้หายจาก stock แล้ว = เปิดสำเร็จไปแล้วจริง — ดึงผลจริงมาโชว์แทน redirect ไปหน้าประวัติ
+      try {
+        const historyResult = await callGAS('getLootHistory', { roomNo: currentRoomNo });
+        const thisMonth = historyResult.history?.find(h =>
+          h.items.some(it => String(it.tier) === String(attemptedMilestone) && it.opened)
+        );
+        const matchedItem = thisMonth?.items.find(it => String(it.tier) === String(attemptedMilestone) && it.opened);
+
+        if (matchedItem) {
+          // เจอผลจริง — โชว์ผ่านแอนิเมชันเดิมเหมือนเปิดสำเร็จปกติ
+          showResult(attemptedMilestone, { discount_amount: matchedItem.amount }, attemptedIsPaid);
+          instruction.textContent = stock.length ? "แตะที่จับอีกครั้งเพื่อเปิดลูกถัดไป" : "เปิดครบแล้วตอนนี้";
+          busy = false;
+          updateIdleHints();
+        } else {
+          // หาผลจริงไม่เจอ (edge case) — fallback ไปหน้าประวัติเหมือนเดิม
+          showToast('🎁 กล่องนี้เปิดสำเร็จไปแล้ว กำลังเปิดหน้าประวัติให้ดูรางวัลที่ได้รับ', 'success', 6000);
+          openHistoryOverlay();
+        }
+      } catch (e) {
+        // ดึงประวัติไม่สำเร็จ — fallback ไปหน้าประวัติแทน ไม่ปล่อยให้ค้าง
+        showToast('🎁 กล่องนี้เปิดสำเร็จไปแล้ว กำลังเปิดหน้าประวัติให้ดูรางวัลที่ได้รับ', 'success', 6000);
+        openHistoryOverlay();
+      }
+    }
+  });
+  return;
+}
+
+      // เปิดสำเร็จ — ตัด milestone นี้ออกจาก stock queue จริง
+      stock.shift();
+      delete lootTokens[milestone];
+      renderPile();
+      updatePlateText();
+      pile.classList.add('pile-settle');
+      setTimeout(()=> pile.classList.remove('pile-settle'), 400);
+
+      showResult(milestone, result, isPaid);
+      instruction.textContent = stock.length ? "แตะที่จับอีกครั้งเพื่อเปิดลูกถัดไป" : "เปิดครบแล้วตอนนี้";
+      busy = false;
+      updateIdleHints();
+    });
+  }, MIN_LAUNCH_MS);
+}
+
+function splitCapsuleOpen(mega, dim, megaCrack, megaRays, onDone){
+  const doSplit = ()=>{
+    const rect = mega.getBoundingClientRect();
+
+    const top = document.createElement('div');
+    top.className = 'mega-half mega-top';
+    top.style.background = mega.style.background;
+    top.style.left = rect.left + 'px';
+    top.style.top = rect.top + 'px';
+    top.style.width = rect.width + 'px';
+    top.style.height = rect.height + 'px';
+
+    const bottom = document.createElement('div');
+    bottom.className = 'mega-half mega-bottom';
+    bottom.style.background = mega.style.background;
+    bottom.style.left = rect.left + 'px';
+    bottom.style.top = rect.top + 'px';
+    bottom.style.width = rect.width + 'px';
+    bottom.style.height = rect.height + 'px';
+
+    document.body.appendChild(top);
+    document.body.appendChild(bottom);
+    mega.remove();
+
+    // เฟลชสองชั้นซ้อนกัน (แกนขาวจ้าตรงกลาง + วงไล่สีทองด้านนอก) ให้แสงมีมิติและอลังการขึ้น
+    const flashCore = document.createElement('div');
+    flashCore.className = 'mega-flash core';
+    document.body.appendChild(flashCore);
+    requestAnimationFrame(()=> flashCore.classList.add('go'));
+
+    const flash = document.createElement('div');
+    flash.className = 'mega-flash';
+    document.body.appendChild(flash);
+    requestAnimationFrame(()=> flash.classList.add('go'));
+
+    requestAnimationFrame(()=>{
+      top.classList.add('mega-split-top');
+      bottom.classList.add('mega-split-bottom');
+    });
+
+    dim.classList.remove('on');
+
+    // เผยป้ายรางวัลทันทีตอนแสงแฟลชขึ้น ไม่ต้องรอซีกแคปซูลบินสุดก่อน
+    setTimeout(()=> onDone(), 180);
+
+    // เคลียร์ element ซีกแคปซูล/แสง/dim/รัศมีทิ้งหลังเล่นแอนิเมชันจบจริง
+    setTimeout(()=>{
+      top.remove();
+      bottom.remove();
+      dim.remove();
+      flash.remove();
+      flashCore.remove();
+      megaRays.remove();
+    }, 640);
+  };
+
+  if(megaCrack){
+    // ก่อนแยกเปลือกจริง: ร้าวลามเต็มลูก → ชนวนแสงวิ่งพุ่งเร็วๆ ตามรอยร้าว →
+    // คลื่นกระแทกวงใหญ่ + สะเก็ดแสงพรู + กล้องสั่นทั้งจอ → วาบสว่างสุดแล้วค่อยแตกออก
+    megaCrack.querySelectorAll('.crack-shadow').forEach(p => p.classList.add('show'));
+    void megaCrack.offsetWidth;
+    megaCrack.classList.add('fuse');
+    setTimeout(()=>{
+      megaCrack.classList.add('shatter');
+      megaRays.classList.add('shatter');
+      spawnShockwaveRing(mega, true);
+      spawnBurstSparks(mega, 16);
+      document.body.classList.add('mega-camera-shake');
+      setTimeout(()=> document.body.classList.remove('mega-camera-shake'), 360);
+      setTimeout(doSplit, 90);
+    }, 150);
+  } else {
+    doSplit();
+  }
+}
+
+function spawnConfetti(count){
+  const colors = ["var(--gold)","var(--red-light)","#D9C4FF","#BFF3E1","#C6E6FF","#FFE39A"];
+  for(let i=0;i<count;i++){
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    const w = 6 + Math.random()*6;
+    const h = w * (1.3 + Math.random()*0.6);
+    p.style.width = w + "px";
+    p.style.height = h + "px";
+    p.style.left = (Math.random()*100) + "vw";
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    p.style.animationDuration = (2 + Math.random()*1.4) + "s";
+    p.style.animationDelay = (Math.random()*0.5) + "s";
+    confettiLayer.appendChild(p);
+    setTimeout(()=> p.remove(), 4000);
+  }
+}
+
+// เปิดไม่สำเร็จ — โชว์การ์ดตรงกลางจอแบบเดียวกับรางวัล (จุดที่ผู้ใช้กำลังมองอยู่พอดีตอนจบแอนิเมชัน)
+// แทนที่จะให้เห็นแค่ toast เล็กๆ บนสุดจอซึ่งพลาดง่ายมาก หลังแอนิเมชันเต็มจอจบลง
+function showErrorCard(message){
+  prizeCard.classList.add('error-state');
+  rarityRibbon.classList.remove('shine');
+  rarityRibbon.textContent = '⚠️ ลองใหม่อีกครั้ง';
+  resultTierLabel.textContent = '';
+  resultPrize.textContent = 'เปิดไม่สำเร็จ';
+  resultNote.textContent = message || 'เกิดข้อผิดพลาด ลองแตะที่จับอีกครั้งได้เลยครับ';
+  closeBtn.textContent = 'ลองใหม่อีกครั้ง';
+
+  document.querySelectorAll('.burst').forEach(el=>el.remove());
+  screenFlash.classList.remove('go','big');
+
+  overlay.classList.remove('show'); void overlay.offsetWidth; overlay.classList.add('show');
+}
+
+function showResult(milestone, result, isPaid){
+  prizeCard.classList.remove('error-state');
+  closeBtn.textContent = 'เก็บรางวัล 🎉';
+  const amount = Number(result.discount_amount) || 0;
+  const rarity = rarityOf(amount);
+
+  resultTierLabel.textContent = (stockLabels[milestone] || milestone).toUpperCase();
+  resultPrize.textContent = `ส่วนลด ${amount} บาท`;
+  resultNote.textContent = "ส่วนลดเข้ารอบบิลถัดไปอัตโนมัติ";
+
+  // ป้ายเดียวกันทุกระดับ — ไม่บอกว่าได้ของ "ดี/ธรรมดา" แค่ไหน ให้ความรู้สึกดีเท่ากันทุกรางวัล
+  rarityRibbon.textContent = '🎉 ยินดีด้วย!';
+  rarityRibbon.classList.remove('shine');
+  if(rarity !== 'common'){ void rarityRibbon.offsetWidth; rarityRibbon.classList.add('shine'); }
+
+  document.querySelectorAll('.burst').forEach(el=>el.remove());
+
+  const count = rarity === 'legendary' ? 28 : rarity === 'rare' ? 18 : 9;
+  for(let i=0;i<count;i++){
+    const b = document.createElement('div');
+    b.className = 'burst';
+    const angle = Math.random()*Math.PI*2;
+    const dist = 30 + Math.random()*30;
+    b.style.setProperty('--dx', `${Math.cos(angle)*dist}px`);
+    b.style.setProperty('--dy', `${Math.sin(angle)*dist}px`);
+    b.style.background = Math.random() > .5 ? 'var(--gold)' : NEW_PALETTE[Math.floor(Math.random()*NEW_PALETTE.length)].main;
+    prizeCard.appendChild(b);
+    setTimeout(()=> b.classList.add('go'), 10);
+  }
+
+  screenFlash.classList.remove('go','big'); void screenFlash.offsetWidth;
+  document.querySelectorAll('.confetti-piece').forEach(el=>el.remove());
+
+  if(rarity === 'legendary'){
+    screenFlash.classList.add('go','big');
+    setTimeout(()=> spawnConfetti(46), 300);
+  } else if(rarity === 'rare'){
+    screenFlash.classList.add('go');
+    setTimeout(()=> spawnConfetti(20), 300);
+  } else {
+    screenFlash.classList.add('go');
+  }
+
+  overlay.classList.remove('show'); void overlay.offsetWidth; overlay.classList.add('show');
+}
+
+closeBtn.addEventListener('click', ()=> overlay.classList.remove('show'));
+crank.addEventListener('click', playOpen);
+crank.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); playOpen(); } });
+retryBtn.addEventListener('click', ()=>{
+  retryBtn.classList.add('loading');
+  instruction.textContent = 'กำลังลองเชื่อมต่อใหม่...';
+  reloadLootBoxData().finally(()=> retryBtn.classList.remove('loading'));
+});
+
 // ============================================================
-//  LOAD DATA
+//  RENDER CABINET จากข้อมูลจริง (getLootBoxDataByRoom / getLootBoxData)
 // ============================================================
+function updateRoomLabel(room){
+  cabRoomBadge.textContent = 'ห้อง ' + room;
+  currentRoomNo = room;
+  showHistoryButton();
+}
+
+// ดึง logic ที่ใช้ร่วมกันระหว่าง "โชว์จาก cache ทันที" กับ "โชว์จากผลจริง" ออกมาเป็นก้อนเดียว
+function applyCabinetData(result){
+  cabinet.classList.remove('cabinet-error');
+  if(result.roomNo) updateRoomLabel(result.roomNo);
+  if(result.tierLabel) currentTierLabel = result.tierLabel; // ✅ เก็บไว้ใช้ตอนเปิดกล่อง
+
+  stock = [];
+  lootTokens = {};
+  const order = ['PAID', 7, 14, 21, 28]; // PAID ได้จากจ่ายบิล มักได้เร็วกว่าเช็คอินครบ 7 วันเสมอ เลยเปิดก่อน
+  const boxes = result.boxes || {};
+  order.forEach(m => {
+    const info = boxes[m] || {};
+    if(info.token && !info.opened){
+      const key = String(m);
+      stock.push(key);
+      lootTokens[key] = info.token;
+    }
+  });
+
+  renderPile();
+  updatePlateText();
+}
+
+// โชว์ตู้จาก cache ทันทีระหว่างรอ backend ตอบจริง — ยังไม่เปิด crank ให้หมุน
+// (token ใน cache อาจเก่ากว่าความจริงแล้ว เช่น เพิ่งเปิดไปจากเครื่องอื่น จึงต้องรอผลจริงก่อนอนุญาตให้กด)
+function renderCabinetPreview(result){
+  applyCabinetData(result);
+  instruction.textContent = "กำลังซิงค์ข้อมูลล่าสุด...";
+}
+
+function renderCabinet(result){
+  retryBtn.style.display = 'none';
+  applyCabinetData(result);
+  crank.style.pointerEvents = '';
+  busy = false;
+  updateIdleHints();
+  instruction.textContent = stock.length
+    ? "แตะที่จับเพื่อลุ้นรางวัล"
+    : "ยังไม่มีกาชาปองให้เปิดในตอนนี้";
+  saveCacheSnapshot(result);
+}
+
+// เรียก callGAS พร้อม retry อัตโนมัติ 1 ครั้งถ้า fetch ล้มเหลวจริง (เน็ตหลุด/parse พัง ฯลฯ)
+// ไม่ retry ถ้า backend ตอบกลับมาแบบ success:false ชัดเจน (เช่น token ผิด) เพราะลองใหม่ก็ไม่ช่วย
+// timeoutMs ยาวพอสำหรับ worst-case ที่เคยวัดได้จริงตอน backend ช้า (GAS concurrent quota / Sheets API)
+// เดิมตั้งไว้แค่ 10000ms (10 วิ) ซึ่งสั้นกว่า worst-case จริงที่เคยเจอ (15+ วิ) ทำให้ AbortController
+// ตัด request ทิ้งก่อนที่ backend จะตอบสำเร็จ กลายเป็น error "เชื่อมต่อไม่สำเร็จ" ทั้งที่จริงๆ แค่ช้า
+// ขยับเป็น 18000ms (18 วิ) ให้คลุม worst-case ได้โดยไม่ยืดยาวเกินจำเป็น
+// ต่างจาก openLootBox ที่ยอมรอนานกว่าได้ (30s) เพราะเป็น action ที่แก้ไขข้อมูลจริงฝั่ง backend
+const DATA_FETCH_TIMEOUT_MS = 18000;
+
+// ============================================================
+//  BOOT SOFT-NOTICE — แจ้งผู้ใช้ตอนบูตแอปว่า "กำลังรอ" ไม่ใช่ "ค้าง"
+//  เกิดขึ้นก่อน hard timeout (DATA_FETCH_TIMEOUT_MS) มาก — แค่เปลี่ยนข้อความ ไม่ยกเลิก request จริง
+//  แยก element ต่างหากจาก .boot-text เดิม (ซึ่งมี interval คุม #boot-loading-dots อยู่แล้ว) กันชนกัน
+// ============================================================
+const BOOT_SOFT_NOTICE_MS = 4000;
+const BOOT_SOFT_NOTICE_TEXT = 'เชื่อมต่อช้ากว่าปกติ กำลังรอผลอยู่...';
+
+function showBootSoftNotice(){
+  const boot = document.getElementById('boot-mask');
+  if (!boot || !document.body.contains(boot)) return; // boot mask อาจถูกลบไปแล้วถ้าโหลดเสร็จก่อน timer นี้ทำงาน
+
+  let notice = document.getElementById('boot-soft-notice');
+  if (!notice) {
+    notice = document.createElement('div');
+    notice.id = 'boot-soft-notice';
+    notice.style.cssText = 'font-family:"Prompt",sans-serif;font-size:13px;color:#94A3B8;margin-top:-8px;text-align:center;padding:0 24px;';
+    boot.appendChild(notice);
+  }
+  notice.textContent = BOOT_SOFT_NOTICE_TEXT;
+}
+
+function clearBootSoftNotice(){
+  const notice = document.getElementById('boot-soft-notice');
+  if (notice) notice.remove();
+}
+
+// ห่อการเรียก load function ตอนบูตแอปด้วย soft-notice timer
+// ไม่กระทบ error handling เดิมของ load function เลย แค่แสดง/ซ่อนข้อความระหว่างรอ
+async function withBootSoftNotice(promiseFn){
+  const t = setTimeout(showBootSoftNotice, BOOT_SOFT_NOTICE_MS);
+  try {
+    return await promiseFn();
+  } finally {
+    clearTimeout(t);
+    clearBootSoftNotice();
+  }
+}
+
+async function callGASWithRetry(action, params, retries = 1, delayMs = 1200, timeoutMs = 10000){
+  try {
+    return await callGAS(action, params, timeoutMs);
+  } catch (e) {
+    if (retries > 0) {
+      await new Promise(r => setTimeout(r, delayMs));
+      return callGASWithRetry(action, params, retries - 1, delayMs, timeoutMs);
+    }
+    throw e;
+  }
+}
+
 async function loadLootBoxForRoom(roomNo) {
   try {
-    const result = await callGAS('getLootBoxDataByRoom', { roomNo });
-    if (!result.success) { showError('❌ ' + (result.message || 'โหลดไม่ได้')); return; }
-    renderPage(result);
-  } catch (e) { showError('❌ โหลดข้อมูลไม่ได้ กรุณาลองใหม่ครับ'); }
+    const result = await callGASWithRetry('getLootBoxDataByRoom', { roomNo }, 1, 1200, DATA_FETCH_TIMEOUT_MS);
+    if (!result.success) { showError('❌ ' + (result.message || 'โหลดไม่ได้'), true); return; }
+    renderCabinet(result);
+  } catch (e) {
+    console.error('loadLootBoxForRoom failed:', e);
+    showError('❌ โหลดข้อมูลไม่ได้ กรุณาลองใหม่ครับ', true);
+  }
 }
 
 async function loadLootBoxByToken(token) {
   try {
-    const result = await callGAS('getLootBoxData', { token });
-    if (!result.success) { showError('❌ ' + (result.message || 'Token ไม่ถูกต้อง')); return; }
-    renderPage(result);
-  } catch (e) { showError('❌ โหลดข้อมูลไม่ได้ กรุณาลองใหม่ครับ'); }
+    const result = await callGASWithRetry('getLootBoxData', { token }, 1, 1200, DATA_FETCH_TIMEOUT_MS);
+    if (!result.success) { showError('❌ ' + (result.message || 'Token ไม่ถูกต้อง'), true); return; }
+    renderCabinet(result);
+  } catch (e) {
+    console.error('loadLootBoxByToken failed:', e);
+    showError('❌ โหลดข้อมูลไม่ได้ กรุณาลองใหม่ครับ', true);
+  }
 }
 
 async function loadLootBoxByUserId(userId) {
   try {
-    const result = await callGAS('getLootBoxData', { userId });
-    if (!result.success) { showError('❌ ' + (result.message || 'โหลดไม่ได้')); return; }
-    renderPage(result);
-  } catch (e) { showError('❌ โหลดข้อมูลไม่ได้ กรุณาลองใหม่ครับ'); }
-}
-
-// ============================================================
-//  RENDER — 4 กล่อง
-// ============================================================
-function renderPage(result) {
-  if (result.roomNo) {
-    document.getElementById('lb-room-label').textContent = 'ห้อง ' + result.roomNo;
-    currentRoomNo = result.roomNo;
-    showHistoryButton();
-  }
-  document.getElementById('lb-count').textContent = result.totalBox || 0;
-  renderLootGrid(result.boxes || {});
-}
-
-function renderLootGrid(boxes) {
-  const grid = document.getElementById('lb-grid');
-  grid.innerHTML = '';
-
-  LB_CONFIG.forEach((cfg, i) => {
-    const info     = boxes[cfg.milestone] || {};
-    const hasBox   = info.token && !info.opened;
-    const isOpened = info.token &&  info.opened;
-    const isLocked = !info.token;
-
-    const wrap = document.createElement('div');
-    wrap.style.cssText = 'position:relative';
-
-    if (hasBox) {
-      const cv = document.createElement('canvas');
-      cv.className = 'sparks';
-      cv.id = 'sp-' + cfg.milestone;
-      wrap.appendChild(cv);
-    }
-
-    const card = document.createElement('div');
-    card.className = 'lb-card'
-      + (hasBox   ? ' can-open' : '')
-      + (isOpened ? ' used'     : '')
-      + (isLocked ? ' locked'   : '');
-    card.id = 'lb-card-' + cfg.milestone;
-    card.setAttribute('data-tier', cfg.tier);
-    card.style.setProperty('--t-color', TIER_CFG[cfg.tier].color);
-    card.classList.add('float-' + (i + 1));
-
-    card.innerHTML = `
-      <span class="lb-card-icon">🎁</span>
-      <div class="lb-card-name">${cfg.name.toUpperCase()}</div>
-      <div class="lb-card-sub">${
-        hasBox   ? 'กดเพื่อเปิดกล่อง' :
-        isOpened ? 'เปิดแล้ว'         : 'ยังไม่ถึงรอบ'
-      }</div>
-      <div class="lb-card-ms ${cfg.ms}">ครบ ${cfg.milestone} วัน</div>
-    `;
-
-    if (hasBox) {
-      card.onclick = () => startLootOpen(cfg.milestone, cfg.name, cfg.tier, info.token);
-    }
-
-    wrap.appendChild(card);
-    setTimeout(() => card.classList.add('fade-in'), i * 80);
-    grid.appendChild(wrap);
-
-    if (hasBox) {
-      setTimeout(() => initSparks('sp-' + cfg.milestone, TIER_CFG[cfg.tier].color), i * 80 + 100);
-    }
-  });
-}
-
-// ============================================================
-//  SOLAR SYSTEM HTML
-// ============================================================
-function buildSolarHTML(tier) {
-  const cfg = TIER_CFG[tier];
-  const cx = 110, cy = 110, sz = 220;
-
-  let svg = `<svg viewBox="0 0 ${sz} ${sz}" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%"><defs>`;
-  cfg.orbits.forEach((_,i) =>
-    svg += `<filter id="rf${i}${tier}"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`
-  );
-  svg += `</defs>`;
-  cfg.orbits.forEach((orb, i) => {
-    svg += `<circle cx="${cx}" cy="${cy}" r="${orb.r}" fill="none" stroke="${cfg.ringCol}" stroke-width="${i===2?1.5:1}" filter="url(#rf${i}${tier})"/>`;
-    svg += `<circle cx="${cx}" cy="${cy}" r="${orb.r}" fill="none" stroke="${cfg.color}" stroke-width="0.4" opacity="0.25"/>`;
-  });
-  svg += `</svg>`;
-
-  let planets = '';
-  cfg.orbits.forEach(orb => {
-    orb.planets.forEach(p => {
-      const h = p.sz / 2;
-      planets += `<div class="planet-css" style="
-        width:${p.sz}px;height:${p.sz}px;margin:-${h}px 0 0 -${h}px;
-        background:${p.col};
-        box-shadow:0 0 ${p.sz*2}px ${p.col},0 0 ${p.sz*3}px ${p.col}88;
-        --s:${p.start}deg;--r:${orb.r}px;
-        animation-duration:${orb.dur}s;
-        animation-delay:-${(p.start/360*orb.dur).toFixed(2)}s;
-      "></div>`;
-    });
-  });
-
-  const sun = `<div class="box-center" id="box-icon" style="
-    background:radial-gradient(circle at 35% 35%,#1a1a24,#08080e);
-    border:2px solid ${cfg.color};
-    box-shadow:0 0 24px ${cfg.color}88,0 0 50px ${cfg.color}44;
-  ">🎁</div>`;
-
-  return svg + planets + sun;
-}
-
-// ============================================================
-//  OPEN LOOT BOX
-// ============================================================
-function startLootOpen(milestone, name, tier, token) {
-  if (lbOpening) return;
-  lbOpening = true;
-
-  if (tier === 'paid') {
-    startStardustOpen(token);
-    return;
-  }
-
-  const cfg     = TIER_CFG[tier];
-  const overlay = document.getElementById('lb-overlay');
-  const flash   = document.getElementById('flash');
-
-  document.documentElement.style.setProperty('--t-color', cfg.color);
-  overlay.style.background = '#000';
-  overlay.classList.add('active');
-  document.getElementById('result-ui').classList.remove('show');
-  document.getElementById('spin-wrap').style.display = 'flex';
-  document.getElementById('spin-stage').innerHTML = buildSolarHTML(tier);
-  overlay.classList.remove('shake-soft','shake-mid','shake-hard','shake-chaos');
-  overlay.classList.add(cfg.shakeClass);
-
-  const boxIcon = document.getElementById('box-icon');
-  boxIcon.style.setProperty('--tension-dur', cfg.tensionDur);
-  setTimeout(() => {
-    boxIcon.classList.add(tier === 'paid' ? 'box-paid-tension' : 'box-tension');
-  }, 100);
-
-  if (cfg.glitch) {
-    const errColor = tier === 'paid' ? '#C084FC' : '#ff0033';
-    ['err1','err2','err3'].forEach(id => {
-      const el = document.getElementById(id);
-      el.style.color = errColor;
-      el.classList.add('show');
-    });
-    setTimeout(() => boxIcon.classList.add('box-glitch'), 1600);
-  }
-
-  callGAS('openLootBox', { token })
-    .then(result => {
-      const waitTime = cfg.glitch ? 3600 : 2700;
-      setTimeout(() => {
-        if (!result.success) {
-          closeLootPopup();
-          showToast('❌ ' + (result.message || 'เกิดข้อผิดพลาด'), 'error');
-          lbOpening = false;
-          return;
-        }
-
-        flash.style.animation = 'flashTrigger .6s forwards';
-        setTimeout(() => {
-          flash.style.animation = '';
-          overlay.classList.remove('shake-soft','shake-mid','shake-hard','shake-chaos');
-          ['err1','err2','err3'].forEach(id => document.getElementById(id).classList.remove('show'));
-          document.getElementById('spin-wrap').style.display = 'none';
-          overlay.style.background = 'radial-gradient(circle,#1E293B 0%,#000 100%)';
-
-          const badge = document.getElementById('res-badge');
-          const sym   = badge.querySelector('.res-badge-sym');
-          badge.style.cssText = `width:90px;height:90px;border-radius:18px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;animation:badgeFloat 2s ease-in-out infinite alternate;background:${cfg.badge.bg};border:1.5px solid ${cfg.badge.border};box-shadow:0 0 28px ${cfg.badge.glow}`;
-          sym.style.cssText   = `font-size:46px;font-weight:900;font-family:Arial Black,sans-serif;position:relative;z-index:1;line-height:1;background:${cfg.badgeGrad};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 14px ${cfg.color})`;
-          document.getElementById('res-tier-name').textContent = cfg.label;
-
-          const btn = document.getElementById('btn-claim');
-          btn.style.setProperty('--btn-bg',    cfg.btn.bg);
-          btn.style.setProperty('--btn-color', cfg.btn.color);
-          btn.style.setProperty('--btn-glow',  cfg.btn.glow);
-          btn.style.color = cfg.btn.color;
-
-          const valEl = document.getElementById('prize-val');
-          valEl.style.animation = 'none';
-          valEl.textContent = '0';
-          void valEl.offsetWidth;
-          valEl.style.animation = '';
-          document.getElementById('result-ui').classList.add('show');
-
-          const card = document.getElementById('lb-card-' + milestone);
-          if (card) {
-            card.classList.add('used');
-            card.querySelector('.lb-card-sub').textContent = 'เปิดแล้ว';
-            card.onclick = null;
-          }
-          const cur = Number(document.getElementById('lb-count').textContent) || 0;
-          document.getElementById('lb-count').textContent = Math.max(0, cur - 1);
-
-          setTimeout(() => {
-            countUp(valEl, result.discount_amount, 1800);
-            spawnConfetti(cfg.confetti);
-          }, 300);
-
-          lbOpening = false;
-        }, 150);
-      }, waitTime);
-    })
-    .catch(() => {
-      closeLootPopup();
-      showToast('❌ เกิดข้อผิดพลาด กรุณาลองใหม่ครับ', 'error');
-      lbOpening = false;
-    });
-}
-
-// ============================================================
-//  CLOSE
-// ============================================================
-function closeLootPopup() {
-  const overlay = document.getElementById('lb-overlay');
-  overlay.classList.remove('active','shake-soft','shake-mid','shake-hard','shake-chaos');
-  document.getElementById('result-ui').classList.remove('show');
-  document.getElementById('spin-stage').innerHTML = '';
-  ['err1','err2','err3'].forEach(id => document.getElementById(id).classList.remove('show'));
-  spawnConfettiStop();
-  lbOpening = false;
-}
-
-// ============================================================
-//  COUNT UP
-// ============================================================
-function countUp(el, target, dur) {
-  const t0 = performance.now();
-  (function step(now) {
-    const t = Math.min(1, (now - t0) / dur);
-    const e = 1 - Math.pow(1 - t, 6);
-    el.textContent = Math.round(e * target);
-    if (t < 1) requestAnimationFrame(step);
-    else el.textContent = target;
-  })(t0);
-}
-
-// ============================================================
-//  CONFETTI
-// ============================================================
-function spawnConfetti(cols) {
-  const w = document.getElementById('lb-confetti');
-  w.innerHTML = ''; w.classList.add('show');
-  for (let i = 0; i < 140; i++) {
-    const d = document.createElement('div');
-    d.className = 'c-dot';
-    const sz = 4 + Math.random() * 9, rect = Math.random() > .4;
-    d.style.cssText = `left:${Math.random()*100}vw;width:${sz}px;height:${rect?sz*2:sz}px;background:${cols[Math.floor(Math.random()*cols.length)]};border-radius:${rect?'2px':'50%'};animation-duration:${1.6+Math.random()*2.2}s;animation-delay:${Math.random()*.6}s;box-shadow:0 0 6px ${cols[Math.floor(Math.random()*cols.length)]}`;
-    w.appendChild(d);
-  }
-  setTimeout(() => spawnConfettiStop(), 5500);
-}
-
-function spawnConfettiStop() {
-  const w = document.getElementById('lb-confetti');
-  w.classList.remove('show');
-  w.innerHTML = '';
-}
-
-// ============================================================
-//  STARDUST — PAID BOX
-// ============================================================
-const STAR_COLORS = ['#E879F9','#C084FC','#A5F3FC','#FCA5A5','#F0ABFC','#fff','#DDD6FE'];
-let starParticles = [];
-let starAnimId    = null;
-let starPhase     = 'idle';
-let starExplodeT  = 0;
-let starGatherT   = 0;
-
-function startStardustOpen(token) {
-  const overlay = document.getElementById('paid-overlay');
-  const canvas  = document.getElementById('paid-canvas');
-  const boxIcon = document.getElementById('paid-box-icon');
-
-  canvas.width  = window.innerWidth;
-  canvas.height = window.innerHeight;
-  const cx = canvas.width  / 2;
-  const cy = canvas.height / 2;
-
-  overlay.classList.add('active');
-  document.getElementById('paid-result').classList.remove('show');
-  boxIcon.style.display = 'flex';
-
-  starPhase    = 'explode';
-  starExplodeT = 0;
-  starGatherT  = 0;
-  createStarParticles(cx, cy);
-
-  setTimeout(() => {
-    boxIcon.style.animation = 'none';
-    boxIcon.style.transform = 'scale(0)';
-  }, 300);
-
-  let apiResult = null;
-  callGAS('openLootBox', { token })
-    .then(r  => { apiResult = r; })
-    .catch(() => { apiResult = { success: false, message: 'เกิดข้อผิดพลาด' }; });
-
-  const ctx = canvas.getContext('2d');
-
-  function loop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if (starPhase === 'explode') {
-      starExplodeT++;
-      starParticles.forEach(p => {
-        p.x += p.vx; p.y += p.vy;
-        p.vy += 0.08; p.vx *= 0.98;
-        p.twinkle += 0.1;
-        drawStar(ctx, p, .6 + .4 * Math.sin(p.twinkle));
-      });
-      if (starExplodeT > 60) { starPhase = 'orbit'; starGatherT = 0; }
-    }
-
-    else if (starPhase === 'orbit') {
-      starGatherT++;
-      starParticles.forEach(p => {
-        p.orbitAngle += p.orbitSpeed * 1.5;
-        p.x = lerp(p.x, cx + Math.cos(p.orbitAngle) * p.orbitR, .08);
-        p.y = lerp(p.y, cy + Math.sin(p.orbitAngle) * p.orbitR, .08);
-        p.twinkle += 0.12;
-        drawStar(ctx, p, .5 + .5 * Math.sin(p.twinkle));
-      });
-      if (starGatherT > 80) { starPhase = 'gather'; starGatherT = 0; }
-    }
-
-    else if (starPhase === 'gather') {
-      starGatherT++;
-      const progress = Math.min(starGatherT / 60, 1);
-      const eased    = 1 - Math.pow(1 - progress, 3);
-
-      starParticles.forEach(p => {
-        p.orbitAngle += p.orbitSpeed * (1 + progress * 4);
-        const tx = cx + Math.cos(p.orbitAngle) * p.orbitR * (1 - eased);
-        const ty = cy + Math.sin(p.orbitAngle) * p.orbitR * (1 - eased);
-        p.x = lerp(p.x, tx, .1);
-        p.y = lerp(p.y, ty, .1);
-        p.size = Math.max(.5, p.size * (1 - eased * .02));
-        p.twinkle += .15;
-        drawStar(ctx, p, Math.max(0, (1 - eased) * (.6 + .4 * Math.sin(p.twinkle))));
-      });
-
-      if (progress > .8) {
-        const fa = (progress - .8) / .2 * .6;
-        ctx.save();
-        ctx.globalAlpha = fa;
-        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 100);
-        grad.addColorStop(0, '#E879F9');
-        grad.addColorStop(1, 'transparent');
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(cx, cy, 100, 0, Math.PI*2);
-        ctx.fill();
-        ctx.restore();
-      }
-
-      if (progress >= 1) { starPhase = 'waiting'; starGatherT = 0; }
-    }
-
-    else if (starPhase === 'waiting') {
-      starGatherT++;
-      const pulse = .3 + .3 * Math.sin((starGatherT / 120) * Math.PI * 2);
-
-      ctx.save();
-      ctx.globalAlpha = pulse;
-      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 130);
-      grad.addColorStop(0, '#E879F9');
-      grad.addColorStop(.5, '#C084FC');
-      grad.addColorStop(1, 'transparent');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 130, 0, Math.PI*2);
-      ctx.fill();
-      ctx.restore();
-
-      starGatherT % 1 === 0 && starParticles.slice(0, 20).forEach((p, i) => {
-        const a = (starGatherT * .05) + (i / 20) * Math.PI * 2;
-        p.x = cx + Math.cos(a) * 50;
-        p.y = cy + Math.sin(a) * 50;
-        p.twinkle += .2;
-        drawStar(ctx, p, .4 + .4 * Math.sin(p.twinkle));
-      });
-
-      if (apiResult !== null) {
-        starPhase = 'done';
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        if (!apiResult.success) {
-          closePaidOverlay();
-          showToast('❌ ' + (apiResult.message || 'เกิดข้อผิดพลาด'), 'error');
-          lbOpening = false;
-          return;
-        }
-
-        showStardustResult(apiResult, canvas, cx, cy);
-        return;
-      }
-    }
-
-    starAnimId = requestAnimationFrame(loop);
-  }
-
-  loop();
-}
-
-function drawStar(ctx, p, alpha) {
-  ctx.save();
-  ctx.globalAlpha = Math.max(0, alpha);
-  ctx.fillStyle   = p.color;
-  ctx.shadowColor = p.color;
-  ctx.shadowBlur  = 8;
-  ctx.beginPath();
-  ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
-  ctx.fill();
-  ctx.restore();
-}
-
-function lerp(a, b, t) { return a + (b - a) * t; }
-
-function createStarParticles(cx, cy) {
-  starParticles = [];
-  for (let i = 0; i < 120; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 2 + Math.random() * 5;
-    starParticles.push({
-      x: cx, y: cy,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - Math.random() * 3,
-      size: 2 + Math.random() * 4,
-      color: randomStarColor(),
-      alpha: 1,
-      orbitR: 60 + Math.random() * 80,
-      orbitSpeed: (Math.random() > .5 ? 1 : -1) * (.02 + Math.random() * .04),
-      orbitAngle: angle,
-      twinkle: Math.random() * Math.PI * 2
-    });
+    const result = await callGASWithRetry('getLootBoxData', { userId }, 1, 1200, DATA_FETCH_TIMEOUT_MS);
+    if (!result.success) { showError('❌ ' + (result.message || 'โหลดไม่ได้'), true); return; }
+    renderCabinet(result);
+  } catch (e) {
+    console.error('loadLootBoxByUserId failed:', e);
+    showError('❌ โหลดข้อมูลไม่ได้ กรุณาลองใหม่ครับ', true);
   }
 }
 
-function randomStarColor() {
-  return STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)];
-}
-function showStardustResult(result, canvas, cx, cy) {
-  const resultEl = document.getElementById('paid-result');
-  const valEl    = document.getElementById('paid-prize-val');
-  const labelEl  = document.getElementById('paid-prize-label');
-  const subEl    = document.getElementById('paid-prize-sub');
-  const amount   = result.discount_amount;
-
-  const isJackpot = amount >= 50;
-  const isRare    = amount >= 30;
-
-  // ✅ label + sub
-if (subEl) {
-  subEl.style.fontFamily    = "'Orbitron', monospace";
-  subEl.style.letterSpacing = '3px';
-  subEl.style.fontSize      = '11px';
-
-  if (isJackpot) {
-    subEl.textContent = 'JACKPOT';
-    subEl.style.color = '#FFD700';
-  } else if (isRare) {
-    subEl.textContent = 'RARE PRIZE';
-    subEl.style.color = '#E879F9';
-  } else if (amount >= 20) {
-    subEl.textContent = 'SPECIAL';
-    subEl.style.color = '#A5F3FC';
-  } else {
-    subEl.textContent = '';
-  }
-}
-  // ✅ ตัวเลข — เปลี่ยนสีตามรางวัล
-  valEl.className = 'paid-prize-val' + (isJackpot ? ' jackpot' : '');
-  valEl.style.animation = 'none';
-  valEl.textContent = '0';
-  void valEl.offsetWidth;
-  valEl.style.animation = '';
-
-  // ✅ jackpot — shake + ring ทอง
-  if (isJackpot) {
-    const overlay = document.getElementById('paid-overlay');
-    overlay.classList.add('shake-mid');
-    setTimeout(() => overlay.classList.remove('shake-mid'), 1000);
-
-    // วงแหวนทองบน canvas
-    const ctx  = canvas.getContext('2d');
-    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 220);
-    grad.addColorStop(0,   '#FFD70066');
-    grad.addColorStop(0.5, '#F59E0B33');
-    grad.addColorStop(1,   'transparent');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(cx, cy, 220, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  resultEl.classList.add('show');
-
-  const card = document.getElementById('lb-card-PAID');
-  if (card) {
-    card.classList.remove('can-open');
-    card.classList.add('used');
-    card.querySelector('.lb-card-sub').textContent = 'เปิดแล้วเดือนนี้';
-    card.onclick = null;
-  }
-
-  const confetti = isJackpot
-    ? ['#FFD700','#E879F9','#fff','#FCA5A5','#F59E0B']
-    : isRare
-    ? ['#E879F9','#C084FC','#fff','#A5F3FC']
-    : ['#C084FC','#fff','#DDD6FE'];
-
-  setTimeout(() => {
-    countUp(valEl, amount, isJackpot ? 2800 : 1800);
-    spawnStarConfetti(canvas, cx, cy, confetti);
-  }, 300);
-
-  lbOpening = false;
-}
-// function showStardustResult(result, canvas, cx, cy) {
-//   const resultEl = document.getElementById('paid-result');
-//   const valEl    = document.getElementById('paid-prize-val');
-
-//   valEl.style.animation = 'none';
-//   valEl.textContent = '0';
-//   void valEl.offsetWidth;
-//   valEl.style.animation = '';
-
-//   resultEl.classList.add('show');
-
-//   const card = document.getElementById('lb-card-PAID');
-//   if (card) {
-//     card.classList.remove('can-open');
-//     card.classList.add('used');
-//     card.querySelector('.lb-card-sub').textContent = 'เปิดแล้วเดือนนี้';
-//     card.querySelector('.lb-card-icon').textContent = '🎁';
-//     card.onclick = null;
-//   }
-
-//   setTimeout(() => {
-//     countUp(valEl, result.discount_amount, 1800);
-//     spawnStarConfetti(canvas, cx, cy);
-//   }, 300);
-
-//   lbOpening = false;
-// }
-
-function spawnStarConfetti(canvas, cx, cy) {
-  const ctx  = canvas.getContext('2d');
-  let drops  = [];
-  for (let i = 0; i < 100; i++) {
-    drops.push({
-      x: Math.random() * canvas.width,
-      y: -10 - Math.random() * 100,
-      vx: (Math.random() - .5) * 2,
-      vy: 1.5 + Math.random() * 2.5,
-      size: 2 + Math.random() * 5,
-      color: randomStarColor(),
-      alpha: 1,
-      twinkle: Math.random() * Math.PI * 2
-    });
-  }
-  function fall() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drops = drops.filter(p => p.alpha > .05);
-    drops.forEach(p => {
-      p.x += p.vx; p.y += p.vy;
-      p.alpha -= .005;
-      p.twinkle += .1;
-      drawStar(ctx, p, p.alpha * (.6 + .4 * Math.sin(p.twinkle)));
-    });
-    if (drops.length) requestAnimationFrame(fall);
-    else ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }
-  fall();
-}
-
-function closePaidOverlay() {
-  const overlay = document.getElementById('paid-overlay');
-  overlay.classList.remove('active');
-  const canvas = document.getElementById('paid-canvas');
-  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-  if (starAnimId) { cancelAnimationFrame(starAnimId); starAnimId = null; }
-  starPhase = 'idle';
-  const boxIcon = document.getElementById('paid-box-icon');
-  boxIcon.style.cssText = '';
-  document.getElementById('paid-result').classList.remove('show');
-  lbOpening = false;
-}
-
 // ============================================================
-//  SPARKS — 4 กล่อง
-// ============================================================
-function initSparks(id, baseColor) {
-  const canvas = document.getElementById(id);
-  if (!canvas) return;
-  const wrap = canvas.parentElement;
-  canvas.width  = wrap.offsetWidth  || 160;
-  canvas.height = wrap.offsetHeight || 180;
-  const ctx = canvas.getContext('2d');
-  const particles = [];
-  const cols = [baseColor, '#ffffff', baseColor + 'aa'];
-
-  function spawn() {
-    const edge = Math.floor(Math.random() * 4);
-    let x, y;
-    if      (edge === 0) { x = Math.random() * canvas.width; y = 0; }
-    else if (edge === 1) { x = canvas.width;  y = Math.random() * canvas.height; }
-    else if (edge === 2) { x = Math.random() * canvas.width; y = canvas.height; }
-    else                 { x = 0; y = Math.random() * canvas.height; }
-    particles.push({
-      x, y,
-      vx: (Math.random() - .5) * 1.0,
-      vy: (Math.random() - .5) * 1.0,
-      size: 1.5 + Math.random() * 2,
-      color: cols[Math.floor(Math.random() * cols.length)],
-      life: 0,
-      maxLife: 45 + Math.random() * 35
-    });
-  }
-
-  let frame = 0;
-  function loop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    frame++;
-    if (frame % 7 === 0) spawn();
-    for (let i = particles.length - 1; i >= 0; i--) {
-      const p = particles[i];
-      p.x += p.vx;
-      p.y += p.vy;
-      p.life++;
-      const alpha = 1 - p.life / p.maxLife;
-      if (alpha <= 0) { particles.splice(i, 1); continue; }
-      ctx.save();
-      ctx.globalAlpha = alpha * 0.8;
-      ctx.fillStyle   = p.color;
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur  = 8;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-    requestAnimationFrame(loop);
-  }
-  loop();
-}
-
-// ============================================================
-//  BORDER TRACE — PAID กล่องเดียว
-// ============================================================
-function initPaidTrace(id, wrap) {
-  const canvas = document.getElementById(id);
-  if (!canvas) return;
-  const W = (wrap.offsetWidth  || 320) + 6;
-  const H = (wrap.offsetHeight || 260) + 6;
-  canvas.width  = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d');
-  const r   = 27;
-  const perimeter = 2 * (W + H) - (8 - 2 * Math.PI) * r;
-
-  const tracers = [
-    { t:0.0,  speed:0.0028, tailLen:0.18, col:'#E879F9' },
-    { t:0.33, speed:0.0022, tailLen:0.14, col:'#A5F3FC' },
-    { t:0.66, speed:0.0035, tailLen:0.12, col:'#C084FC' },
-  ];
-
-  function progressToPoint(prog) {
-    prog = ((prog % 1) + 1) % 1;
-    const dist   = prog * perimeter;
-    const top    = W - 2*r + Math.PI*r/2;
-    const right  = top    + H - 2*r + Math.PI*r/2;
-    const bottom = right  + W - 2*r + Math.PI*r/2;
-
-    if (dist <= top) {
-      const topFlat = W - 2*r;
-      if (dist <= topFlat) return { x: r + dist, y: 0 };
-      const a = (dist - topFlat) / r - Math.PI/2;
-      return { x: W-r + Math.cos(a)*r, y: r + Math.sin(a)*r };
-    } else if (dist <= right) {
-      const d2 = dist - top;
-      if (d2 <= Math.PI*r/2) {
-        const a = d2/r;
-        return { x: W-r + Math.cos(a)*r, y: r + Math.sin(a)*r };
-      }
-      const d3 = d2 - Math.PI*r/2;
-      if (d3 <= H-2*r) return { x: W, y: r + d3 };
-      const a = (d3-(H-2*r))/r;
-      return { x: W-r + Math.cos(a)*r, y: H-r + Math.sin(a)*r };
-    } else if (dist <= bottom) {
-      const d2 = dist - right;
-      if (d2 <= Math.PI*r/2) {
-        const a = d2/r;
-        return { x: W-r + Math.cos(a)*r, y: H-r + Math.sin(a)*r };
-      }
-      const d3 = d2 - Math.PI*r/2;
-      if (d3 <= W-2*r) return { x: W-r-d3, y: H };
-      const a = Math.PI + (d3-(W-2*r))/r;
-      return { x: r + Math.cos(a)*r, y: H-r + Math.sin(a)*r };
-    } else {
-      const d2 = dist - bottom;
-      if (d2 <= Math.PI*r/2) {
-        const a = Math.PI + d2/r;
-        return { x: r + Math.cos(a)*r, y: H-r + Math.sin(a)*r };
-      }
-      const d3 = d2 - Math.PI*r/2;
-      if (d3 <= H-2*r) return { x: 0, y: H-r-d3 };
-      const a = (3*Math.PI/2) + (d3-(H-2*r))/r;
-      return { x: r + Math.cos(a)*r, y: r + Math.sin(a)*r };
-    }
-  }
-
-  function loop() {
-    ctx.clearRect(0, 0, W, H);
-    tracers.forEach(tr => {
-      tr.t += tr.speed;
-      for (let s = 40; s >= 0; s--) {
-        const pt    = progressToPoint(tr.t - (s/40) * tr.tailLen);
-        const alpha = (1 - s/40) * 0.9;
-        const size  = 2.5 * (1 - s/40 * 0.6);
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle   = tr.col;
-        ctx.shadowColor = tr.col;
-        ctx.shadowBlur  = 12;
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, size, 0, Math.PI*2);
-        ctx.fill();
-        ctx.restore();
-      }
-    });
-    requestAnimationFrame(loop);
-  }
-  loop();
-}
-// ============================================================
-//  HISTORY BUTTON + OVERLAY
+//  HISTORY BUTTON + OVERLAY (เดิม 100%)
 // ============================================================
 function showHistoryButton() {
   document.getElementById('btn-history').classList.add('show');
@@ -1038,11 +1021,11 @@ function formatMonthLabel(monthKey) {
 
 function getTierMeta(tierRaw) {
   if (String(tierRaw).trim() === 'PAID') {
-    return { name: 'PAID BONUS', color: TIER_CFG.paid.color };
+    return { name: 'PAID BONUS', color: TIER_COLORS.paid };
   }
   const cfg = LB_CONFIG.find(c => c.milestone === Number(tierRaw));
-  if (cfg) return { name: cfg.name, color: TIER_CFG[cfg.tier].color };
-  return { name: 'ไม่ทราบ', color: '#475569' };
+  if (cfg) return { name: cfg.name, color: TIER_COLORS[cfg.tier] };
+  return { name: 'ไม่ทราบ', color: '#8B929C' };
 }
 
 function openHistoryOverlay() {
@@ -1079,7 +1062,7 @@ function renderHistory(history) {
   const body = document.getElementById('history-body');
 
   if (!history.length) {
-    body.innerHTML = '<div class="loading">ยังไม่มีประวัติการเปิดกล่องครับ</div>';
+    body.innerHTML = '<div class="loading">ยังไม่มีประวัติการเปิดกาชาปองครับ</div>';
     return;
   }
 
@@ -1123,7 +1106,66 @@ function renderHistory(history) {
       </div>`;
   }).join('');
 }
+
 // ============================================================
-//  START
+//  INIT
 // ============================================================
+let bootMode  = null; // 'room' | 'token' | 'userId' — จำวิธีโหลดข้อมูลตอนเปิดแอปไว้ ใช้ซิงค์ใหม่ทีหลังได้โดยไม่ต้องปิดแอป
+let bootParam = null;
+
+// ค่อยๆ จางจอ loading ออกแทนหายวับทันที (กันภาพกระตุก) — ปลอดภัยเรียกซ้ำได้ เช็ค element เองก่อน
+function removeBootMask(){
+  const boot = document.getElementById('boot-mask');
+  if (!boot || boot.classList.contains('fade-out')) return;
+  boot.classList.add('fade-out');
+  setTimeout(() => boot.remove(), 350);
+}
+
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  const room   = params.get('room');
+  const token  = params.get('token');
+  const view   = params.get('view');
+
+  crank.style.pointerEvents = 'none'; // ปิดจนกว่าจะโหลดข้อมูลจริงเสร็จ
+
+  // มี room/token → ยิง data fetch ทันที ไม่ต้องรอ LIFF handshake ก่อน (ไม่จำเป็นต้องใช้ LIFF profile ใน 2 path นี้)
+  if (room) {
+    bootMode = 'room'; bootParam = room;
+    tryRenderFromCache('room', room); // โชว์ของรอบก่อนทันทีระหว่างรอ backend ตอบจริง (ถ้ามี cache)
+    await withBootSoftNotice(() => loadLootBoxForRoom(room));
+  } else if (token) {
+    bootMode = 'token'; bootParam = token;
+    tryRenderFromCache('token', token);
+    await withBootSoftNotice(() => loadLootBoxByToken(token));
+  } else {
+    // ไม่มี room/token → ต้องพึ่ง LIFF profile จริงๆ ค่อย await ตรงนี้ (cache ยังใช้ไม่ได้เพราะยังไม่รู้ userId)
+    await initLiff();
+    if (liffReady && liff.isLoggedIn() && liffProfile) {
+      bootMode = 'userId'; bootParam = liffProfile.userId;
+      tryRenderFromCache('userId', liffProfile.userId);
+      await withBootSoftNotice(() => loadLootBoxByUserId(liffProfile.userId));
+    } else {
+      showError('❌ ไม่พบข้อมูลห้อง');
+    }
+  }
+
+  if (view === 'history' && currentRoomNo) {
+    openHistoryOverlay();
+  }
+
+  removeBootMask();
+}
+
+// ซิงค์ข้อมูลกล่อง/token ใหม่จาก server ด้วยวิธีเดียวกับตอนบูตแอป
+// ใช้ตอน request เปิดกล่องช้าผิดปกติจนหมดเวลา เพื่อดึงสถานะจริงมาแทนที่จะให้ผู้ใช้ปิดแอปเอง
+async function reloadLootBoxData(){
+  busy = true;
+  updateIdleHints();
+  if(bootMode === 'room') await loadLootBoxForRoom(bootParam);
+  else if(bootMode === 'token') await loadLootBoxByToken(bootParam);
+  else if(bootMode === 'userId') await loadLootBoxByUserId(bootParam);
+  else showError('❌ ไม่พบข้อมูลห้อง');
+}
+
 init();
