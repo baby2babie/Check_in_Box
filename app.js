@@ -5,8 +5,8 @@
 //  loading | idle | play | result | empty | error
 // ============================================================
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbx580dyPfzslsut-QGtLrRHCt0Hdv9AscR3OfZF0ZTKYKfKETTKF9DAI7e6wXyhEvYlBw/exec';
-const LIFF_ID = '2004478373-aQPYZEpt';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbw6QhU3fUwvVO5UdG3qNKRLa4cdx9AIcW9IiJwm65TxfAtwHhsXK--2PG2dXsjWCkJ8/exec';
+const LIFF_ID = '2004478373-pUgVSZTj';
 
 // milestone → ชื่อคูปอง — ลำดับนี้คือลำดับที่ stock queue จะเปิดก่อน-หลัง
 const LB_CONFIG = [
