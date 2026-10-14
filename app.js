@@ -1,4 +1,4 @@
-// ============================================================
+// =============================OK===============================
 //  คูปองส่วนลด — app.js (Minimal Premium Edition)
 //  UI/UX ใหม่ทั้งหมด · โครง backend / LIFF / cache / history / ลอจิกเกม คงเดิม
 //  สถานะหน้าจอควบคุมผ่าน data-state บน #revealCard:
@@ -917,9 +917,10 @@ function renderHistory(history) {
         </li>`;
     }).join('');
 
-    const statusHtml = hasOpened
-      ? `<span class="h-status ${h.applied ? 'applied' : ''}">${h.applied ? 'ตัดบิลแล้ว' : 'รอตัดบิล'}</span>`
-      : '';
+    // const statusHtml = hasOpened
+    //   ? `<span class="h-status ${h.applied ? 'applied' : ''}">${h.applied ? 'ตัดบิลแล้ว' : 'รอตัดบิล'}</span>`
+    //   : '';
+    const statusHtml = `<span class="h-status ${h.applied ? 'applied' : ''}">${h.applied ? 'ตัดบิลแล้ว' : 'รอตัดบิล'}</span>`;
 
     const totalHtml = hasOpened
       ? `<div class="h-total">
