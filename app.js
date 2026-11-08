@@ -5,9 +5,10 @@
 //  loading | idle | play | result | empty | error
 // ============================================================
 
+// const GAS_URL = 'https://script.google.com/macros/s/AKfycbx580dyPfzslsut-QGtLrRHCt0Hdv9AscR3OfZF0ZTKYKfKETTKF9DAI7e6wXyhEvYlBw/exec';
+// const LIFF_ID = '2004478373-aQPYZEpt';
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbw6QhU3fUwvVO5UdG3qNKRLa4cdx9AIcW9IiJwm65TxfAtwHhsXK--2PG2dXsjWCkJ8/exec';
 const LIFF_ID = '2004478373-pUgVSZTj';
-
 // milestone → ชื่อคูปอง — ลำดับนี้คือลำดับที่ stock queue จะเปิดก่อน-หลัง
 const LB_CONFIG = [
   { milestone: 7,  name: 'Silver',   tier: 'silver' },
@@ -19,7 +20,7 @@ const TIER_COLORS = { silver:'#7F93AD', gold:'#B38A38', plat:'#8574B5', legend:'
 
 const stockLabels = {
   "7": "เช็คอินครบ 7 วัน", "14": "เช็คอินครบ 14 วัน", "21": "เช็คอินครบ 21 วัน", "28": "เช็คอินครบ 28 วัน",
-  "PAID": "จ่ายบิลตรงเวลา"
+  "PAID": "ชำระบิลตรงเวลา"
 };
 
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -60,7 +61,9 @@ function applyTier(tierLabel) {
 
 // ตัวเลขล่อ (decoy) โชว์บนวงล้อระหว่างหมุน — คือชุดค่า discount_amount ที่ไม่ซ้ำกันทั้งหมดจากชีท LOOT_BOX จริง
 // (ครบทุก tier/milestone พอดี 7 ค่า = จำนวนช่องบนวงล้อพอดี) การันตีว่ารางวัลจริงที่ backend ส่งมาตอนจบ
-// จะเป็นหนึ่งใน 7 ค่านี้เสมอ
+// จะเป็นหนึ่งใน 7 ค่านี้เสมอ — ค่าสูงสุดจะเป็นช่องสีทองโดยอัตโนมัติ
+// เปิดใช้ Jackpot: เพิ่ม 100 ต่อท้ายรายการ (ต้องเพิ่มแถวในชีท LOOT_BOX + รัน SQL ก่อน)
+const JACKPOT_AMOUNT = 100;
 const CAPSULE_NUMBERS = [5, 10, 15, 20, 25, 30, 50];
 const N_CAPS = 7;
 
@@ -86,6 +89,10 @@ function saveCacheSnapshot(result) {
   }
 }
 
+function clearCacheSnapshot() {
+  try { if (bootMode && bootParam) sessionStorage.removeItem(cacheKey(bootMode, bootParam)); } catch (e) {}
+}
+
 function tryRenderFromCache(mode, param) {
   try {
     const raw = sessionStorage.getItem(cacheKey(mode, param));
@@ -94,7 +101,7 @@ function tryRenderFromCache(mode, param) {
     if (!result || Date.now() - ts > CACHE_MAX_AGE_MS) return false;
     applyRoomData(result);
     renderStateUI(); // ปุ่มเริ่มยังซ่อนอยู่ จนกว่าข้อมูลจริงจะมา (busy = true)
-    instruction.textContent = "อัปเดตข้อมูลล่าสุดอยู่...";
+    instruction.textContent = "กำลังอัปเดตข้อมูลล่าสุด...";
     removeBootMask();
     return true;
   } catch (e) {
@@ -198,10 +205,10 @@ function showError(msg, retryable = false) {
   loadFailed = true;
   setState('error');
   setPhase(0);
-  setTitle('เชื่อมต่อไม่ติด 😵');
+  setTitle('ไม่สามารถเชื่อมต่อได้');
   // ลองใหม่ด้วยตัวเองไม่ได้ผลติดต่อกันหลายครั้ง — session อาจหมดอายุ แนะนำให้เปิดลิงก์ใหม่แทน
   const hintText = manualRetryCount >= 2
-    ? `${msg} ลองหลายรอบแล้วยังไม่ได้ ปิดหน้านี้แล้วเปิดลิงก์ใหม่ดูนะ`
+    ? `${msg} ลองหลายครั้งแล้วยังไม่สำเร็จ กรุณาปิดหน้านี้แล้วเปิดลิงก์ใหม่อีกครั้ง`
     : msg;
   setHint(hintText);
   instruction.textContent = '';
@@ -215,6 +222,7 @@ function showError(msg, retryable = false) {
 //  LIFF
 // ============================================================
 async function initLiff() {
+  if (liffReady && liffProfile) return;   // เรียกซ้ำตอนกดลองใหม่ ไม่ต้อง init ซ้ำ
   try {
     await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true });
     liffReady = true;
@@ -236,7 +244,8 @@ function boxNameFor(milestone) {
 }
 function couponSummary(milestone) {
   const reason = stockLabels[String(milestone)];
-  return reason ? `รอบนี้: ${boxNameFor(milestone)} จาก${reason}` : `รอบนี้: ${boxNameFor(milestone)}`;
+  const via = /^(เช็คอิน|ชำระ)/.test(reason || '') ? 'จากการ' : 'จาก';
+  return reason ? `สิทธิ์ ${boxNameFor(milestone)} ${via}${reason}` : `สิทธิ์ ${boxNameFor(milestone)}`;
 }
 
 function updateStockCount() {
@@ -248,13 +257,13 @@ function renderStateUI() {
   setPhase(0);
   if (stock.length > 0) {
     setState('idle');
-    setTitle('วงล้อพร้อม ไปหมุนกัน!');
+    setTitle('พร้อมลุ้นรางวัลแล้ว');
     setHint(couponSummary(stock[0]));
     buildIdlePreview();
   } else {
     setState('empty');
-    setTitle('ยังไม่มีสปินตอนนี้');
-    setHint('เช็คอินให้ครบ หรือจ่ายบิลตรงเวลา แล้วกลับมาหมุนใหม่นะ');
+    setTitle('ขณะนี้ไม่มีสิทธิ์ลุ้นรางวัล');
+    setHint('สิทธิ์ใหม่จะปรากฏเมื่อเช็คอินครบตามเกณฑ์ หรือชำระบิลตรงเวลา');
     showEmptySlots();
   }
 }
@@ -281,7 +290,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 // ============================================================
 function spawnConfetti(count) {
   if (REDUCED_MOTION) return;
-  const colors = ['var(--tier)', 'var(--tier)', 'var(--tier-line)', 'var(--tier-deep)'];
+  const colors = ['#E8B94A', '#F6D77C', '#C8202E', 'var(--tier)'];
   for (let i = 0; i < count; i++) {
     const p = document.createElement('div');
     p.className = 'confetti-piece';
@@ -323,27 +332,32 @@ let wheelSize = 0;          // ขนาดจริง (css px) ของ canva
 let wheelLoopHandle = null; // requestAnimationFrame handle ของช่วงหมุนวนไม่ทราบผล
 let wheelVelocity = 0;      // ความเร็วปัจจุบัน (เรเดียน/ms) — เก็บไว้ต่อเนื่องจังหวะตอนเข้าสู่ช่วงชะลอ
 const WHEEL_V0 = 0.011;     // ความเร็วสูงสุดตอนหมุนวน (เรเดียน/ms)
-// สีบนวงล้อ — คงที่ สนุกสนาน ไม่ผูกกับ tier ของผู้เช่า (tier ใช้แค่คำนวณโอกาส/มูลค่ารางวัลใน backend เท่านั้น)
-// 7 สี ตรงกับ 7 ช่องพอดี ตำแหน่งสีจะคงที่ทุกรอบ มีแค่ตัวเลขในแต่ละช่องที่สับใหม่
-const WHEEL_PALETTE = [
-  { bg: '#FF6B6B', ink: '#FFFFFF' },
-  { bg: '#FFD166', ink: '#4A3200' },
-  { bg: '#06D6A0', ink: '#00382C' },
-  { bg: '#4CC9F0', ink: '#00354A' },
-  { bg: '#9B5DE5', ink: '#FFFFFF' },
-  { bg: '#F15BB5', ink: '#4A0030' },
-  { bg: '#FF9F1C', ink: '#4A2600' },
-];
+const MIN_SPIN_MS  = 2500;  // หมุนเร็วคงที่อย่างน้อยกี่ ms ก่อนเริ่มชะลอ
+const DECEL_MIN_MS = 5000;  // ช่วงชะลอจนหยุดอย่างน้อยกี่ ms — ปรับตัวเลขนี้ได้ (แนะนำ 5000–6000)
+// สีบนวงล้อ — ช่องที่มีค่ามากที่สุดเป็นสีทองเสมอ ที่เหลือสลับแดง/ครีมเริ่มจากช่องถัดจากทองตามเข็มนาฬิกา
+// (7 ช่อง = ทอง 1 + แดง/ครีมอย่างละ 3 จึงไม่มีสีซ้ำชิดกัน) ไม่ผูกกับ tier ของผู้เช่า
+// ตัวเลขสับตำแหน่งใหม่ทุกรอบ ทองจึงย้ายตามเลขสูงสุดไปด้วย
+const SLICE_RED   = { bg: '#C8202E', ink: '#FFF4D6' };
+const SLICE_CREAM = { bg: '#FFF1DC', ink: '#8E1019' };
+const SLICE_GOLD  = { bg: '#E8B94A', ink: '#4A0E14' };
+function sliceStyle(i, n, goldIdx) {
+  if (i === goldIdx) return SLICE_GOLD;
+  const k = (i - goldIdx - 1 + n) % n;   // ลำดับตั้งแต่ช่องหลังทองเป็นต้นไป
+  return k % 2 === 0 ? SLICE_RED : SLICE_CREAM;
+}
+const RIM_BULBS = 20; // จำนวนหลอดไฟบนกรอบทอง
 
 // ============================================================
 //  เพลงพื้นหลัง — สุ่ม 1 เพลงจาก BGM_LIST ตอนโหลดหน้า (ไฟล์อยู่ assets/ ต้องนำไปวางเอง)
-//  เริ่มเล่นตอนกด "หมุนเลย!" เท่านั้น (ต้องมี user gesture เบราว์เซอร์/LIFF ถึงจะยอมให้เล่น)
+//  เริ่มเล่นตอนกด "ลุ้นรางวัล" เท่านั้น (ต้องมี user gesture เบราว์เซอร์/LIFF ถึงจะยอมให้เล่น)
 //  หยุดทันทีตอนออกจากหน้า/ปิด LIFF ผ่าน pagehide — ปุ่มลำโพงคุมแค่ mute ไม่ทำให้เพลงหยุดเล่นจริง
 //  (เอาเสียงสังเคราะห์ Web Audio ชุดเดิม — ensureAudio/playTick/playWin — ออกแล้ว เพราะเล่นทับกับเพลงนี้)
 // ============================================================
-const BGM_LIST = ['assets/bgm1.mp3', 'assets/bgm2.mp3', 'assets/bgm3.mp3'];
+const BGM_LIST = ['assets/bgm1.mp3', 'assets/bgm2.mp3', 'assets/bgm3.mp3', 'assets/bgm4.mp3', 'assets/bgm5.mp3'];
 bgm.src = BGM_LIST[Math.floor(Math.random() * BGM_LIST.length)]; // ตั้ง src ไว้ล่วงหน้า กดเริ่มแล้วเล่นได้ทันที
-let musicOn = localStorage.getItem('bgmOn') !== '0'; // ค่าเริ่มต้น = เปิดเสียง
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+let musicOn = lsGet('bgmOn') !== '0'; // ค่าเริ่มต้น = เปิดเสียง
 bgm.volume = 0.65;
 bgm.muted = !musicOn;
 
@@ -355,11 +369,19 @@ setMusicBtnUI();
 btnMusic.addEventListener('click', () => {
   musicOn = !musicOn;
   bgm.muted = !musicOn;
-  localStorage.setItem('bgmOn', musicOn ? '1' : '0');
+  lsSet('bgmOn', musicOn ? '1' : '0');
   setMusicBtnUI();
 });
 
 window.addEventListener('pagehide', () => { bgm.pause(); });
+
+// เริ่มโหลดไฟล์เพลงหลังข้อมูลหลักมาแล้วเท่านั้น (ไม่แย่งเน็ตกับการโหลดข้อมูล)
+let bgmWarmed = false;
+function warmBgm() {
+  if (bgmWarmed) return;
+  bgmWarmed = true;
+  try { bgm.preload = 'auto'; bgm.load(); } catch (e) {}
+}
 
 
 function shuffleArray(arr) {
@@ -371,8 +393,20 @@ function shuffleArray(arr) {
 }
 
 // ขนาด canvas ผูกกับความกว้างจริงของบอร์ด (รองรับ retina ผ่าน devicePixelRatio) — เรียกตอน build และตอน resize
+// ปรับขนาดกรอบวงล้อให้เต็มพื้นที่ว่างจริงของ .stage (ทั้งกว้างและสูง) — ไม่ต้องเลื่อนจอ ใหญ่สุดเท่าที่จอให้
+function fitBoard() {
+  const stage = board.parentElement;
+  if (!stage) return;
+  const cs = getComputedStyle(stage);
+  const h = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const w = stage.clientWidth;
+  const size = Math.floor(Math.min(w, h, 420));
+  if (size >= 200) board.style.width = size + 'px';
+}
+
 function layoutWheel() {
-  const size = board.clientWidth * 0.88; // ตรงกับ width 88% ใน .wheel-canvas
+  fitBoard();
+  const size = board.clientWidth * 0.92; // ตรงกับ width 92% ใน .wheel-canvas
   if (!size) return;
   wheelSize = size;
   const dpr = window.devicePixelRatio || 1;
@@ -383,6 +417,8 @@ function layoutWheel() {
   wheelCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 window.addEventListener('resize', () => { layoutWheel(); drawWheel(); });
+// พื้นที่ว่างเปลี่ยน (แถบ LINE ซ่อน/แสดง, หมุนจอ, ฟอนต์โหลดเสร็จ) — คำนวณขนาดและวาดใหม่ให้ตรงเสมอ
+if (window.ResizeObserver) new ResizeObserver(() => { layoutWheel(); drawWheel(); }).observe(board.parentElement);
 
 function currentSliceIndex() {
   const n = wheelValues.length;
@@ -397,16 +433,36 @@ function drawWheel(highlightIdx) {
   if (!wheelCtx || !wheelSize) return;
   const ctx = wheelCtx;
   const center = wheelSize / 2;
-  const r = wheelSize / 2 - 3;
+  const R = wheelSize / 2 - 3;      // รัศมีนอกสุด (ขอบกรอบทอง)
+  const rimW = R * 0.11;            // ความหนากรอบทอง
+  const r = R - rimW;               // รัศมีของช่องรางวัล
   const n = wheelValues.length;
   if (!n) return;
   const slice = (Math.PI * 2) / n;
 
   ctx.clearRect(0, 0, wheelSize, wheelSize);
+
+  // กรอบทอง (ไม่หมุนตามช่อง) + ร่องแดงเข้มด้านใน
+  const rim = ctx.createLinearGradient(0, 0, wheelSize, wheelSize);
+  rim.addColorStop(0, '#FFE9A8');
+  rim.addColorStop(0.35, '#E8B94A');
+  rim.addColorStop(0.65, '#B97F1C');
+  rim.addColorStop(1, '#F6D77C');
+  ctx.beginPath();
+  ctx.arc(center, center, R, 0, Math.PI * 2);
+  ctx.fillStyle = rim;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(center, center, r + 1.5, 0, Math.PI * 2);
+  ctx.fillStyle = '#5A0E16';
+  ctx.fill();
+
+  // ช่องรางวัล (ช่องที่มีเลขสูงสุดเป็นสีทอง)
+  const goldIdx = wheelValues.indexOf(Math.max(...wheelValues));
   for (let i = 0; i < n; i++) {
     const start = wheelRotation + i * slice;
     const end = start + slice;
-    const c = WHEEL_PALETTE[i % WHEEL_PALETTE.length];
+    const c = sliceStyle(i, n, goldIdx);
     ctx.beginPath();
     ctx.moveTo(center, center);
     ctx.arc(center, center, r, start, end);
@@ -416,14 +472,14 @@ function drawWheel(highlightIdx) {
 
     if (i === highlightIdx) {
       ctx.save();
-      ctx.globalAlpha = 0.28;
-      ctx.fillStyle = '#FFFFFF';
+      ctx.globalAlpha = 0.45;
+      ctx.fillStyle = '#FFE9A8';
       ctx.fill();
       ctx.restore();
     }
 
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(255,255,255,.85)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,233,168,.9)';
     ctx.stroke();
 
     ctx.save();
@@ -431,17 +487,40 @@ function drawWheel(highlightIdx) {
     ctx.rotate(start + slice / 2);
     ctx.textAlign = 'right';
     ctx.fillStyle = c.ink;
-    const fontSize = Math.max(14, Math.min(22, wheelSize * 0.055));
+    const fontSize = Math.max(14, Math.min(26, wheelSize * 0.06));
     ctx.font = '600 ' + fontSize + 'px "Anuphan","Sarabun",sans-serif';
     ctx.fillText(wheelValues[i] + '฿', r - 14, fontSize * 0.32);
     ctx.restore();
   }
 
-  ctx.beginPath();
-  ctx.arc(center, center, r, 0, Math.PI * 2);
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = '#FFFFFF';
-  ctx.stroke();
+  // หลอดไฟบนกรอบ — สลับติด/ดับทุก ~0.4 วินาที (ปิดเมื่อผู้ใช้ตั้งค่าลดแอนิเมชัน)
+  const phase = REDUCED_MOTION ? 0 : Math.floor(performance.now() / 420) % 2;
+  const rb = R - rimW / 2;
+  for (let i = 0; i < RIM_BULBS; i++) {
+    const ang = (i / RIM_BULBS) * Math.PI * 2 - Math.PI / 2;
+    const on = (i + phase) % 2 === 0;
+    ctx.beginPath();
+    ctx.arc(center + Math.cos(ang) * rb, center + Math.sin(ang) * rb, rimW * 0.27, 0, Math.PI * 2);
+    if (on) {
+      ctx.fillStyle = '#FFFBE6';
+      ctx.shadowColor = 'rgba(255,226,140,.95)';
+      ctx.shadowBlur = 8;
+    } else {
+      ctx.fillStyle = '#C98E22';
+      ctx.shadowBlur = 0;
+    }
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+}
+
+// ให้หลอดไฟกระพริบตอนวงล้ออยู่นิ่ง (ตอนหมุน/ชะลอ มีการวาดทุกเฟรมอยู่แล้ว)
+if (!REDUCED_MOTION) {
+  setInterval(() => {
+    const s = revealCard.dataset.state;
+    if (document.hidden || (s !== 'idle' && s !== 'empty' && s !== 'loading')) return;
+    drawWheel();
+  }, 420);
 }
 
 // สับตัวเลขล่อใหม่ 1 ชุดสำหรับรอบนี้ — ใช้ทั้งพรีวิวตอน idle และตอนเริ่มเล่นจริง
@@ -489,13 +568,13 @@ function stopContinuousSpin() {
 // และให้เวลาเร่งขึ้นความเร็วสูงสุดก่อน จะได้ชะลอต่อเนื่องแบบไม่สะดุดในขั้นตอนถัดไป)
 async function spinWhileWaiting(apiPromise) {
   startContinuousSpin();
-  const MIN_SPIN_MS = 2000;
   const [result] = await Promise.all([apiPromise, wait(MIN_SPIN_MS)]);
   return result;
 }
 
-// เมื่อรู้ผลจริงแล้ว — ชะลอจากความเร็วปัจจุบันไปหยุดที่ช่องตรงกับรางวัลจริง ด้วยความเร่งคงที่
-// (ระยะทาง = ความเร็วเริ่มต้น x เวลาชะลอ / 2) ทำให้ต่อเนื่องจากช่วงหมุนวนพอดี ไม่มีจังหวะสะดุดเปลี่ยนความเร็วกะทันหัน
+// เมื่อรู้ผลจริงแล้ว — ชะลอจากความเร็วปัจจุบันไปหยุดที่ช่องตรงกับรางวัลจริง
+// ใช้ cubic ease-out: ความเร็วเริ่มต้น = v0 พอดี (ต่อเนื่องจากช่วงหมุนวน) แล้วค่อยๆ ช้าลงจนหยุด
+// ระยะทาง delta ถูกบังคับให้ไม่น้อยกว่า v0 x DECEL_MIN_MS / 3 จึงชะลออย่างน้อย DECEL_MIN_MS ทุกรอบ (T = 3 x delta / v0)
 async function landOnAmount(amount) {
   const v0 = wheelVelocity || WHEEL_V0;
   stopContinuousSpin();
@@ -507,28 +586,27 @@ async function landOnAmount(amount) {
     wheelValues[targetIndex] = amount;
   }
 
+  const TAU = Math.PI * 2;
   const n = wheelValues.length;
-  const slice = (Math.PI * 2) / n;
+  const slice = TAU / n;
   const pointerAngle = -Math.PI / 2;
   const targetCenter = targetIndex * slice + slice / 2;
-  const extraSpins = 5 + Math.floor(Math.random() * 2); // ยิ่งเยอะ ยิ่งชะลอนุ่มนวลขึ้น
-  const finalRotation = pointerAngle - targetCenter + Math.PI * 2 * extraSpins;
+  const jitter = (Math.random() - 0.5) * slice * 0.6;      // หยุดในช่องแต่ไม่ตรงกลางเป๊ะทุกครั้ง (ไม่เข้าใกล้ขอบช่อง)
+  const finalMod = (((pointerAngle - targetCenter + jitter) % TAU) + TAU) % TAU;
 
   const startRotation = wheelRotation;
-  const delta = finalRotation - (startRotation % (Math.PI * 2));
-  const decelDuration = Math.max(1800, (2 * delta) / v0); // T = 2*ระยะทาง/ความเร็วเริ่มต้น
+  const minDelta = (v0 * DECEL_MIN_MS) / 3;
+  let delta = (((finalMod - startRotation) % TAU) + TAU) % TAU;
+  while (delta < minDelta) delta += TAU;
+  const decelDuration = (3 * delta) / v0;
 
-  let lastTickIdx = currentSliceIndex();
   await new Promise(resolve => {
     let startTime = null;
     function frame(ts) {
       if (!startTime) startTime = ts;
       const t = Math.min(1, (ts - startTime) / decelDuration);
-      // ความเร็วลดลงเชิงเส้นจาก v0 ไป 0 (ความเร่งคงที่) — ระยะสะสมเป็นเส้นโค้งพาราโบลาแบบแรงเฉื่อยจริง
-      wheelRotation = startRotation + delta * (2 * t - t * t);
-      const idx = currentSliceIndex();
-      if (idx !== lastTickIdx) { lastTickIdx = idx; } // ยิ่งใกล้หยุด เสียงยิ่งเบา/ทุ้มลง
-      drawWheel(idx);
+      wheelRotation = startRotation + delta * (1 - Math.pow(1 - t, 3));
+      drawWheel(currentSliceIndex());
       if (t < 1) requestAnimationFrame(frame);
       else resolve();
     }
@@ -555,14 +633,16 @@ async function landOnAmount(amount) {
 
 // ตั๋วเฉลยรางวัล — เรียกตอนวงล้อหยุดแล้ว (celebrate=true) หรือตอนกู้คืนผลเก่าแบบเงียบๆ (celebrate=false)
 function presentTicket(milestone, amount, celebrate = true) {
-  ticketTier.textContent = `${boxNameFor(milestone)} Coupon`;
-  ticketDesc.textContent = 'หักจากบิลรอบหน้าให้เอง ไม่ต้องทำอะไรเพิ่ม';
-  ticket.setAttribute('aria-label', `${boxNameFor(milestone)} Coupon ลดค่าเช่า ${amount} บาท`);
+  const isJackpot = Number(amount) >= JACKPOT_AMOUNT;
+  ticketTier.textContent = isJackpot ? 'Jackpot' : `${boxNameFor(milestone)} Coupon`;
+  ticket.classList.toggle('jackpot', isJackpot);
+  ticketDesc.textContent = 'หักจากบิลรอบถัดไปโดยอัตโนมัติ';
+  ticket.setAttribute('aria-label', `${boxNameFor(milestone)} Coupon ส่วนลดค่าเช่า ${amount} บาท`);
   ticket.classList.add('show');
   claimBtn.classList.add('show');
   if (celebrate) {
     countUp(ticketAmt, amount);
-    spawnConfetti(amount >= 70 ? 28 : 16);
+    spawnConfetti(isJackpot ? 60 : 16);
   } else {
     ticketAmt.textContent = amount;
   }
@@ -576,8 +656,8 @@ async function playRound(milestone, requestOpen) {
   claimBtn.classList.remove('show');
 
   setPhase(1);
-  setTitle('ลุ้นๆๆ 🤞');
-  setHint('ขอให้เป็นเลขใหญ่นะ');
+  setTitle('กำลังลุ้นรางวัล');
+  setHint('กรุณารอสักครู่');
 
   // ยิงคำขอเปิดคูปองจริงทันทีที่เริ่มรอบ (ผู้เล่นกดเริ่มไปแล้วครั้งเดียว ถือว่าคอมมิทแล้ว)
   const apiPromise = requestOpen();
@@ -593,14 +673,15 @@ async function playRound(milestone, requestOpen) {
   setPhase(2);
   await landOnAmount(amount);
 
-  await wait(150); // เว้นจังหวะเล็กน้อยก่อน flash ให้ไม่ดูกระตุก
+  await wait(600); // ให้วงล้อนิ่งสนิทและเห็นช่องที่หยุดก่อน flash
 
   screenFlash.classList.remove('go'); void screenFlash.offsetWidth; screenFlash.classList.add('go');
   await wait(450);
 
   setState('result');
-  setTitle('เฮ! ได้ส่วนลดแล้ว 🎉');
-  setHint('');
+  const jackpot = amount >= JACKPOT_AMOUNT;
+  setTitle(jackpot ? 'JACKPOT! ยินดีด้วย' : 'ขอแสดงความยินดี');
+  setHint('คุณได้รับส่วนลดค่าเช่า');
   presentTicket(milestone, amount);
 
   return { success: true, result };
@@ -611,14 +692,14 @@ function showQuickTicket(milestone, amount) {
   stopContinuousSpin();
   setState('result');
   setPhase(2);
-  setTitle('ใบนี้หมุนไปแล้วนะ');
-  setHint('นี่คือส่วนลดที่ได้ไปเลย');
+  setTitle('สิทธิ์นี้ถูกใช้แล้ว');
+  setHint('นี่คือส่วนลดที่คุณได้รับ');
   presentTicket(milestone, amount, false);
 }
 
 async function startRound() {
   if (busy) return; // กันกดซ้ำระหว่างรอบกำลังเล่นอยู่
-  if (stock.length === 0) { instruction.textContent = "ตอนนี้ยังไม่มีสปินให้หมุน"; return; }
+  if (stock.length === 0) { instruction.textContent = "ขณะนี้ไม่มีสิทธิ์ให้ใช้"; return; }
   busy = true;
   startBtn.classList.add('hide');
   retryBtn.style.display = 'none';
@@ -632,14 +713,14 @@ async function startRound() {
   // ส่งคำขอเปิดจริง "ตอนผู้เล่นกดเริ่ม" (playRound เป็นคนเรียก)
   // request ไม่ถูกยกเลิกแม้ backend จะตอบช้า (auto-resync ผ่าน HARD_TIMEOUT_MS ถ้าช้าเกินไปจริงๆ)
   const requestOpen = () => {
-    const realPromise = callGAS('openLootBox', { token, tierLabel: currentTierLabel }, 45000).catch((err) => {
+    const realPromise = callGAS('openLootBox', { token }, 45000).catch((err) => {
       console.error('openLootBox failed:', err);
       return { success: false, message: 'เชื่อมต่อกับระบบไม่สำเร็จ' };
     });
     return withTimeout(
       realPromise,
       HARD_TIMEOUT_MS,
-      { success: false, message: 'ระบบอืดนิดนึง เดี๋ยวเช็คผลให้เอง ไม่ต้องกังวล', hardFail: true }
+      { success: false, message: 'ระบบตอบสนองช้า กำลังตรวจสอบผลให้อัตโนมัติ', hardFail: true }
     );
   };
 
@@ -649,6 +730,7 @@ async function startRound() {
     stock.shift();
     delete lootTokens[milestone];
     updateStockCount();
+    clearCacheSnapshot();   // กันหน้าเปิดรอบหน้าโชว์สิทธิ์เก่าที่เพิ่งใช้ไป
     busy = false;
     return;
   }
@@ -656,31 +738,38 @@ async function startRound() {
   // ── เปิดไม่สำเร็จ: sync ข้อมูลใหม่ แล้วเช็คว่าจริงๆ เปิดสำเร็จไปแล้วหรือเปล่า ──
   const result = outcome.result;
   if (result && result.hardFail) {
-    showToast('ระบบอืดนิดนึง เดี๋ยวเช็คผลให้เอง ไม่ต้องกังวล', 'error', 4000);
+    showToast('ระบบตอบสนองช้า กำลังตรวจสอบผลให้อัตโนมัติ', 'error', 4000);
   } else {
-    showToast(result?.message || 'หมุนไม่สำเร็จ ลองใหม่อีกครั้งนะ', 'error', 4000);
+    showToast(result?.message || 'ไม่สามารถดำเนินการได้ กรุณาลองใหม่อีกครั้ง', 'error', 4000);
   }
   setPhase(0);
-  setTitle('กำลังเช็คให้อยู่...');
+  setTitle('กำลังตรวจสอบข้อมูล');
   setHint('');
-  instruction.textContent = "อัปเดตข้อมูลล่าสุดอยู่...";
+  instruction.textContent = "กำลังอัปเดตข้อมูลล่าสุด...";
 
   // ถ้า openLootBox ยังประมวลผลอยู่ ให้เวลาสั้น ๆ ก่อนอ่านสถานะใหม่
   // โดยไม่ยิง openLootBox ซ้ำ ป้องกันการเปิดซ้ำ/แข่งกันเขียนข้อมูล
-  if (result && result.hardFail) {
-    await wait(1200);
-  }
   ticket.classList.remove('show');
   claimBtn.classList.remove('show');
   stopContinuousSpin();
 
-  await reloadLootBoxData();
+  if (result && result.hardFail) {
+    // backend อาจยังประมวลผลอยู่ — เช็กสถานะซ้ำสูงสุด 4 รอบ (ห่างกัน ~2.5 วินาที) ไม่ยิง openLootBox ซ้ำ
+    for (let i = 0; i < 4; i++) {
+      await wait(2500);
+      await reloadLootBoxData();
+      if (loadFailed || !stock.includes(milestone)) break;
+    }
+  } else {
+    await reloadLootBoxData();
+  }
 
   if (!stock.includes(milestone)) {
     // กล่องนี้หายจาก stock แล้ว = เปิดสำเร็จไปแล้วจริง — ดึงผลจริงมาโชว์แทน
     try {
       const historyResult = await callGAS('getLootHistory', { roomNo: currentRoomNo });
-      const thisMonth = historyResult.history?.find(h =>
+      const months = [...(historyResult.history || [])].sort((x, y) => String(y.month).localeCompare(String(x.month)));
+      const thisMonth = months.find(h =>
         h.items.some(it => String(it.tier) === String(milestone) && it.opened)
       );
       const matchedItem = thisMonth?.items.find(it => String(it.tier) === String(milestone) && it.opened);
@@ -688,12 +777,12 @@ async function startRound() {
       if (matchedItem) {
         showQuickTicket(milestone, matchedItem.amount);
       } else {
-        showToast('ใบนี้หมุนสำเร็จไปแล้ว เดี๋ยวพาไปดูผลในประวัติ', 'success', 6000);
+        showToast('สิทธิ์นี้ถูกใช้เรียบร้อยแล้ว กำลังเปิดประวัติให้ดูผล', 'success', 6000);
         openHistoryOverlay();
         updateStartState();
       }
     } catch (e) {
-      showToast('ใบนี้หมุนสำเร็จไปแล้ว เดี๋ยวพาไปดูผลในประวัติ', 'success', 6000);
+      showToast('สิทธิ์นี้ถูกใช้เรียบร้อยแล้ว กำลังเปิดประวัติให้ดูผล', 'success', 6000);
       openHistoryOverlay();
       updateStartState();
     }
@@ -718,7 +807,7 @@ startBtn.addEventListener('click', () => {
 retryBtn.addEventListener('click', () => {
   manualRetryCount++;
   retryBtn.classList.add('loading');
-  instruction.textContent = 'กำลังลองใหม่...';
+  instruction.textContent = 'กำลังเชื่อมต่อใหม่...';
   reloadLootBoxData().finally(() => retryBtn.classList.remove('loading'));
 });
 
@@ -759,7 +848,9 @@ function renderCabinet(result) {
   busy = false;
   updateStartState();
   saveCacheSnapshot(result);
+  warmBgm();
 }
+
 
 async function callGASWithRetry(action, params, retries = 1, delayMs = 1200, timeoutMs = 10000) {
   try {
@@ -778,31 +869,31 @@ const DATA_FETCH_TIMEOUT_MS = 10000;   // เวลารอโหลดข้�
 async function loadLootBoxForRoom(roomNo) {
   try {
     const result = await callGASWithRetry('getLootBoxDataByRoom', { roomNo }, 1, 1200, DATA_FETCH_TIMEOUT_MS);
-    if (!result.success) { showError(result.message || 'โหลดไม่ขึ้น ลองใหม่อีกทีนะ', true); return; }
+    if (!result.success) { showError(result.message || 'ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง', true); return; }
     renderCabinet(result);
   } catch (e) {
     console.error('loadLootBoxForRoom failed:', e);
-    showError('โหลดไม่ขึ้น ลองใหม่อีกทีนะ', true);
+    showError('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง', true);
   }
 }
 async function loadLootBoxByToken(token) {
   try {
     const result = await callGASWithRetry('getLootBoxData', { token }, 1, 1200, DATA_FETCH_TIMEOUT_MS);
-    if (!result.success) { showError(result.message || 'ลิงก์นี้ใช้ไม่ได้ ลองขอลิงก์ใหม่นะ', true); return; }
+    if (!result.success) { showError(result.message || 'ลิงก์ไม่ถูกต้อง กรุณาขอลิงก์ใหม่', true); return; }
     renderCabinet(result);
   } catch (e) {
     console.error('loadLootBoxByToken failed:', e);
-    showError('โหลดไม่ขึ้น ลองใหม่อีกทีนะ', true);
+    showError('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง', true);
   }
 }
 async function loadLootBoxByUserId(userId) {
   try {
     const result = await callGASWithRetry('getLootBoxData', { userId }, 1, 1200, DATA_FETCH_TIMEOUT_MS);
-    if (!result.success) { showError(result.message || 'โหลดไม่ขึ้น ลองใหม่อีกทีนะ', true); return; }
+    if (!result.success) { showError(result.message || 'ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง', true); return; }
     renderCabinet(result);
   } catch (e) {
     console.error('loadLootBoxByUserId failed:', e);
-    showError('โหลดไม่ขึ้น ลองใหม่อีกทีนะ', true);
+    showError('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง', true);
   }
 }
 
@@ -863,28 +954,44 @@ function historyMessage(title, sub, withRetry) {
     <div class="h-empty">
       <p class="h-empty-title">${esc(title)}</p>
       ${sub ? `<p>${esc(sub)}</p>` : ''}
-      ${withRetry ? '<button class="btn ghost" type="button" onclick="loadHistory()">ลองอีกที</button>' : ''}
+      ${withRetry ? '<button class="btn ghost" type="button" onclick="loadHistory()">ลองอีกครั้ง</button>' : ''}
     </div>`;
 }
 
+function historyCacheKey() { return 'gacha_hist_' + currentRoomNo; }
+
 async function loadHistory() {
   const body = document.getElementById('history-body');
-  body.innerHTML = '<div class="h-skel" aria-label="กำลังโหลด"><i></i><i></i><i></i><i></i></div>';
 
   if (!currentRoomNo) {
-    body.innerHTML = historyMessage('หาห้องของคุณไม่เจอ', '', false);
+    body.innerHTML = historyMessage('ไม่พบข้อมูลห้อง', '', false);
     return;
   }
 
+  // โชว์ของที่เคยโหลดไว้ทันที (ถ้ามี) แล้วค่อยทับด้วยข้อมูลล่าสุด
+  let shownFromCache = false;
   try {
-    const result = await callGAS('getLootHistory', { roomNo: currentRoomNo });
+    const raw = sessionStorage.getItem(historyCacheKey());
+    if (raw) {
+      const cached = JSON.parse(raw);
+      if (cached && Array.isArray(cached.history)) { renderHistory(cached.history); shownFromCache = true; }
+    }
+  } catch (e) {}
+  if (!shownFromCache) {
+    body.innerHTML = '<div class="h-skel" aria-label="กำลังโหลด"><i></i><i></i><i></i><i></i></div>';
+  }
+
+  try {
+    const result = await callGASWithRetry('getLootHistory', { roomNo: currentRoomNo }, 1, 1200, 15000);
     if (!result.success) {
-      body.innerHTML = historyMessage('โหลดประวัติไม่ขึ้น', result.message || '', true);
+      if (!shownFromCache) body.innerHTML = historyMessage('ไม่สามารถโหลดประวัติได้', result.message || '', true);
       return;
     }
-    renderHistory(result.history || []);
+    const history = result.history || [];
+    renderHistory(history);
+    try { sessionStorage.setItem(historyCacheKey(), JSON.stringify({ history, ts: Date.now() })); } catch (e) {}
   } catch (e) {
-    body.innerHTML = historyMessage('โหลดประวัติไม่ขึ้น', 'ลองใหม่อีกทีนะ', true);
+    if (!shownFromCache) body.innerHTML = historyMessage('ไม่สามารถโหลดประวัติได้', 'กรุณาลองใหม่อีกครั้ง', true);
   }
 }
 
@@ -892,7 +999,7 @@ function renderHistory(history) {
   const body = document.getElementById('history-body');
 
   if (!history.length) {
-    body.innerHTML = historyMessage('ยังไม่เคยหมุนเลย', 'หมุนแล้วผลจะมาโชว์ตรงนี้', false);
+    body.innerHTML = historyMessage('ยังไม่มีประวัติ', 'ผลที่ได้รับจะแสดงที่นี่', false);
     return;
   }
 
@@ -904,7 +1011,7 @@ function renderHistory(history) {
       const meta = getTierMeta(it.tier);
       const amountHtml = it.opened
         ? `<span class="h-amount">฿${Number(it.amount).toLocaleString()}</span>`
-        : `<span class="h-amount is-muted">ยังไม่ได้หมุน</span>`;
+        : `<span class="h-amount is-muted">ยังไม่ได้ใช้สิทธิ์</span>`;
       return `
         <li class="h-row">
           <span class="h-tier" style="--tier-color:${meta.color}">
@@ -918,11 +1025,14 @@ function renderHistory(history) {
         </li>`;
     }).join('');
 
-    const statusHtml = `<span class="h-status ${h.applied ? 'applied' : ''}">${h.applied ? 'หักบิลแล้ว ✓' : 'รอหักบิล'}</span>`;
+    // เดือนที่ไม่ได้ใช้สิทธิ์เลยและยังไม่ตัดบิล ไม่มีส่วนลดรอหัก จึงไม่โชว์ "รอหักบิล"
+    const statusHtml = (h.applied || hasOpened)
+      ? `<span class="h-status ${h.applied ? 'applied' : ''}">${h.applied ? 'หักบิลแล้ว' : 'รอหักบิล'}</span>`
+      : '';
 
     const totalHtml = hasOpened
       ? `<div class="h-total">
-           <span class="h-total-label">รวมที่ได้เดือนนี้</span>
+           <span class="h-total-label">รวมส่วนลดที่ได้รับ</span>
            <span class="h-total-amount">฿${total.toLocaleString()}</span>
          </div>`
       : '';
@@ -952,36 +1062,48 @@ function removeBootMask() {
   setTimeout(() => boot.remove(), 350);
 }
 
-async function init() {
-  applyTier('Member'); // ค่าเริ่มต้นก่อนรู้ tier จริง
-
+// โหลดข้อมูลตามโหมดที่เปิดมา (room / token / LIFF userId) — ใช้ทั้งตอนเปิดหน้าและตอนกด "ลองอีกครั้ง" ที่ยังไม่เคยรู้โหมด
+async function bootLoad() {
   const params = new URLSearchParams(window.location.search);
   const room   = params.get('room');
   const token  = params.get('token');
-  const view   = params.get('view');
-
-  startBtn.classList.add('hide'); // ปิดจนกว่าจะโหลดข้อมูลจริงเสร็จ
 
   if (room) {
     bootMode = 'room'; bootParam = room;
-    tryRenderFromCache('room', room);
+    if (!tryRenderFromCache('room', room)) instruction.textContent = 'กำลังโหลดข้อมูล...';
     await loadLootBoxForRoom(room);
   } else if (token) {
     bootMode = 'token'; bootParam = token;
-    tryRenderFromCache('token', token);
+    if (!tryRenderFromCache('token', token)) instruction.textContent = 'กำลังโหลดข้อมูล...';
     await loadLootBoxByToken(token);
   } else {
     await initLiff();
-    if (liffReady && liff.isLoggedIn() && liffProfile) {
+    if (liffReady && !liff.isLoggedIn()) return;   // กำลังพาไปหน้า login ของ LINE ไม่ต้องโชว์ error
+    if (liffReady && liffProfile) {
       bootMode = 'userId'; bootParam = liffProfile.userId;
-      tryRenderFromCache('userId', liffProfile.userId);
+      if (!tryRenderFromCache('userId', liffProfile.userId)) instruction.textContent = 'กำลังโหลดข้อมูล...';
       await loadLootBoxByUserId(liffProfile.userId);
     } else {
-      showError('หาห้องของคุณไม่เจอ');
+      showError('เชื่อมต่อ LINE ไม่สำเร็จ', true);
     }
   }
+}
 
-  if (view === 'history' && currentRoomNo) {
+async function init() {
+  applyTier('Member'); // ค่าเริ่มต้นก่อนรู้ tier จริง
+  startBtn.classList.add('hide'); // ปิดจนกว่าจะโหลดข้อมูลจริงเสร็จ
+  buildWheelValues();   // วาดวงล้อรอไว้ทันที (ตัวเลขล่อ) ไม่ให้เป็นวงกลมว่างระหว่างรอข้อมูล
+
+  const params = new URLSearchParams(window.location.search);
+  // คงหน้ารอไว้จนข้อมูลพร้อม (รอครั้งเดียว เข้าวงล้อแล้วกดได้เลย) — ถ้ารอนานผิดปกติให้ข้อความบอก
+  setTimeout(() => {
+    const t = document.querySelector('#boot-mask .boot-text');
+    if (t) t.textContent = 'กำลังเชื่อมต่อ ใช้เวลานานกว่าปกติเล็กน้อย';
+  }, 6000);
+
+  await bootLoad();
+
+  if (params.get('view') === 'history' && currentRoomNo) {
     openHistoryOverlay();
   }
 
@@ -992,7 +1114,7 @@ async function reloadLootBoxData() {
   if (bootMode === 'room') await loadLootBoxForRoom(bootParam);
   else if (bootMode === 'token') await loadLootBoxByToken(bootParam);
   else if (bootMode === 'userId') await loadLootBoxByUserId(bootParam);
-  else showError('หาห้องของคุณไม่เจอ');
+  else await bootLoad();
 }
 
 init();
