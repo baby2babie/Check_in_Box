@@ -1,7 +1,7 @@
 // ============================================================
 //  วงล้อส่วนลด — app.js (Minimal Premium Edition)
 //  UI/UX ใหม่ทั้งหมด · โครง backend / LIFF / cache / history / ลอจิกเกม คงเดิม
-//  สถานะหน้าจอควบคุมผ่าน data-state บน #revealCard:
+//  สถานะหน้าจอควบคุมผ่าน data-state บน #revealCard: PRP_OK
 //  loading | idle | play | result | empty | error
 // ============================================================
 
@@ -64,12 +64,13 @@ function applyTier(tierLabel) {
 }
 
 // ตัวเลขล่อ (decoy) โชว์บนวงล้อระหว่างหมุน — คือชุดค่า discount_amount ที่ไม่ซ้ำกันทั้งหมดจากชีท LOOT_BOX จริง
-// (ครบทุก tier/milestone พอดี 7 ค่า = จำนวนช่องบนวงล้อพอดี) การันตีว่ารางวัลจริงที่ backend ส่งมาตอนจบ
-// จะเป็นหนึ่งใน 7 ค่านี้เสมอ — ค่าสูงสุดจะเป็นช่องสีทองโดยอัตโนมัติ
+// (LOOT_BOX v5: 5 รางวัลต่อกล่อง + กล่อง PAID + Jackpot รวมค่าที่ไม่ซ้ำ 12 ค่า = จำนวนช่องบนวงล้อพอดี)
+// การันตีว่ารางวัลจริงที่ backend ส่งมาตอนจบจะเป็นหนึ่งในค่านี้เสมอ — ค่าสูงสุดจะเป็นช่องสีทองโดยอัตโนมัติ
+// แก้ตารางรางวัลแล้วมีค่าใหม่ → เพิ่มค่านั้นในรายการนี้ด้วย (ค่านอกรายการยังโชว์ได้ตอนวงล้อหยุด แต่ไม่ถูกแสดงตอนหมุน)
 // เปิดใช้ Jackpot: เพิ่ม 100 ต่อท้ายรายการ (ต้องเพิ่มแถวในชีท LOOT_BOX + รัน SQL ก่อน)
 const JACKPOT_AMOUNT = 100;
-const CAPSULE_NUMBERS = [5, 10, 15, 20, 25, 30, 50];
-const N_CAPS = 7;
+const CAPSULE_NUMBERS = [5, 7, 8, 10, 12, 15, 18, 20, 25, 30, 50, 100];
+const N_CAPS = 12;
 
 // ============================================================
 //  CACHE (sessionStorage) — stale-while-revalidate
@@ -148,6 +149,9 @@ const revealCard    = document.getElementById('revealCard');   // .app — ถ�
 const instruction   = document.getElementById('instruction');
 const stockCount    = document.getElementById('stockCount');
 const retryBtn      = document.getElementById('retryBtn');
+const respinBtn     = document.getElementById('respinBtn');
+const respinSheet   = document.getElementById('respinSheet');
+const claimRow      = document.getElementById('claimRow');
 const cabRoomBadge  = document.getElementById('cabRoomBadge');
 const screenFlash   = document.getElementById('screenFlash');
 const confettiLayer = document.getElementById('confettiLayer');
@@ -162,6 +166,8 @@ const ticketTier  = document.getElementById('ticketTier');
 const ticketDesc  = document.getElementById('ticketDesc');
 const claimBtn    = document.getElementById('claimBtn');
 const startBtn    = document.getElementById('startBtn');
+const helperBtn   = document.getElementById('helperBtn');
+const helperSheet = document.getElementById('helperSheet');
 const bgm         = document.getElementById('bgm');
 const btnMusic    = document.getElementById('btn-music');
 const wheelCanvas  = document.getElementById('wheelCanvas');
@@ -272,6 +278,181 @@ function renderStateUI() {
   }
 }
 
+
+// ============================================================
+//  ตัวช่วยก่อนลุ้น (จ่ายด้วยแต้มเช็คอิน) — เลือกได้ 1 ตัวต่อกล่อง ฝั่ง backend ตัดสินราคา/สิทธิ์/แต้มทั้งหมด
+//  ฝั่งนี้แค่ถามตัวเลือก (helperInfo) แล้วส่งชื่อตัวช่วยไปพร้อมคำขอเปิดกล่อง (openLootBox + helper)
+// ============================================================
+const HELPER_META = {
+  boost: { name: 'BOOSTER', short: 'BOOSTER', desc: 'โอกาสได้ส่วนลดสูงขึ้นกว่าปกติ' },
+  floor: { name: 'SAFE+',   short: 'SAFE+',   desc: 'รอบนี้จะไม่ได้ส่วนลดต่ำสุดของกล่องแน่นอน' },
+  up:    { name: 'UPGRADE', short: 'UPGRADE', desc: 'ลุ้นด้วยรางวัลของกล่องระดับถัดไป' },
+  two:   { name: 'TWIN',    short: 'TWIN',    desc: 'หมุน 2 ครั้ง เลือก 1 ส่วนลดที่ดีสุด' },
+  magnet:{ name: 'MAGNET',  short: 'MAGNET',  desc: 'ดึงโอกาสไปที่ส่วนลดสูงสุดของกล่อง' },
+  vip:   { name: 'LEGEND TOUCH', short: 'LEGEND', desc: 'ลุ้นด้วยสิทธิ์ระดับ Legend 1 รอบ' }
+};
+let helperData = null;       // { token, points, options:[{key,price,affordable}] }
+let helperLoading = null;    // promise ระหว่างโหลด
+let helperChoice = null;     // key ที่เลือกไว้ (หรือ null)
+let helperPick = null;       // key ที่กำลังเลือกในแผ่น (ยังไม่ยืนยัน)
+
+function currentToken() { return stock.length ? lootTokens[stock[0]] : null; }
+function currentIsPaid() { return stock.length && stock[0] === 'PAID'; }
+
+function resetHelper() {
+  helperChoice = null; helperPick = null; helperData = null; helperLoading = null;
+  helperBtn.classList.remove('on');
+  document.getElementById('helperBtnText').textContent = 'ตัวช่วย';
+  helperSheet.hidden = true;
+}
+
+function loadHelperInfo() {
+  const token = currentToken();
+  if (!token || currentIsPaid()) return Promise.resolve(null);
+  if (helperData && helperData.token === token) return Promise.resolve(helperData);
+  if (helperLoading) return helperLoading;
+  helperLoading = callGAS('helperInfo', { token, tierLabel: currentTierLabel }, 8000)
+    .then((r) => {
+      helperLoading = null;
+      if (r && r.success && r.eligible && Array.isArray(r.options) && r.options.length) {
+        helperData = { token, points: Number(r.points) || 0, options: r.options };
+      } else {
+        helperData = { token, points: Number(r.points) || 0, options: [] };
+      }
+      syncHelperBtn();
+      return helperData;
+    })
+    .catch(() => { helperLoading = null; return null; });
+  return helperLoading;
+}
+
+// ปุ่มตัวช่วยโชว์เมื่อปุ่ม "ลุ้นรางวัล" โชว์ (ยกเว้นกล่อง PAID หรือ backend บอกว่าไม่มีตัวช่วย)
+function syncHelperBtn() {
+  const idle = !startBtn.classList.contains('hide');
+  const noOpt = helperData && helperData.options.length === 0;
+  helperBtn.style.display = (idle && !currentIsPaid() && !noOpt) ? '' : 'none';
+  if (idle && !currentIsPaid()) loadHelperInfo();
+}
+new MutationObserver(syncHelperBtn).observe(startBtn, { attributes: true, attributeFilter: ['class'] });
+
+// เริ่มดึงตัวช่วยของกล่องใบถัดไปทันทีที่ backend ตอบว่าเปิดกล่องสำเร็จ (แต้มถูกหักแล้ว) — ระหว่างที่วงล้อยังหมุนไปหยุดอยู่
+// พอถึงตาใบถัดไป ข้อมูลมาถึงตั้งนานแล้ว กดตัวช่วยจึงขึ้นทันที
+let pendingHint = null;      // ข้อความใต้หัวข้อตอนขึ้นผล (ตัวช่วย TWIN/UPGRADE บอกผลที่เกิดขึ้น)
+function setHelperHint(res, fromMilestone) {
+  pendingHint = null;
+  if (!res || !res.success || res.already) return;
+  const amt = Number(res.discount_amount) || 0;
+  if (res.helper_used === 'two' && res.draws) {
+    const p = String(res.draws).split(',').map(Number);
+    if (p.length === 2 && p[0] !== p[1]) pendingHint = `TWIN ได้ ${p[0]} กับ ${p[1]} บาท เลือก ${amt} บาท`;
+    else if (p.length === 2) pendingHint = `TWIN ได้ ${amt} บาททั้งสองครั้ง เลือก ${amt} บาท`;
+  } else if (res.helper_used === 'up') {
+    const n = NEXT_BOX[fromMilestone];
+    if (n) pendingHint = `UPGRADE ลุ้นด้วยรางวัลของกล่อง ${n} วัน`;
+  } else if (res.helper_used === 'vip') {
+    pendingHint = 'LEGEND TOUCH ลุ้นด้วยสิทธิ์ระดับ Legend';
+  }
+}
+let helperNext = null;       // { token, p: promise, data }
+function prefetchNextHelper() {
+  const t2 = stock.length > 1 ? lootTokens[stock[1]] : null;
+  if (!t2 || stock[1] === 'PAID') { helperNext = null; return; }
+  const slot = { token: t2, data: null };
+  slot.p = callGAS('helperInfo', { token: t2, tierLabel: currentTierLabel }, 8000).then((r) => {
+    if (r && r.success) {
+      slot.data = { token: t2, points: Number(r.points) || 0,
+                    options: (r.eligible && Array.isArray(r.options)) ? r.options : [] };
+    }
+    return slot.data;
+  }).catch(() => null);
+  helperNext = slot;
+}
+function adoptNextHelper() {
+  const slot = helperNext; helperNext = null;
+  helperData = null; helperLoading = null;
+  if (slot && slot.token === currentToken()) {
+    if (slot.data) { helperData = slot.data; syncHelperBtn(); return; }
+    helperLoading = slot.p.then((d) => {
+      helperLoading = null;
+      if (d) { helperData = d; syncHelperBtn(); }
+      return helperData;
+    });
+    return;
+  }
+  refreshHelperInfo();
+}
+
+// ดึงตัวช่วย/แต้มล่าสุดของกล่องใบถัดไปไว้ล่วงหน้า (หลังเปิดกล่องหรือหลังลุ้นอีกครั้ง แต้มเปลี่ยน) เพื่อให้กดปุ่มตัวช่วยแล้วขึ้นทันที
+function refreshHelperInfo() {
+  helperData = null; helperLoading = null;
+  if (stock.length && stock[0] !== 'PAID') loadHelperInfo();
+}
+
+const NEXT_BOX = { '7': '14', '14': '21', '21': '28' };
+function upgradeDesc() {
+  const n = NEXT_BOX[stock[0]];
+  return n ? `ลุ้นด้วยรางวัลของกล่อง ${n} วัน` : HELPER_META.up.desc;
+}
+
+function renderHelperSheet() {
+  const d = helperData;
+  document.getElementById('hsPoints').textContent = d ? d.points : 0;
+  const list = document.getElementById('hsList');
+  list.innerHTML = '';
+  (d ? d.options : []).forEach((o) => {
+    const meta = HELPER_META[o.key]; if (!meta) return;
+    const off = !o.affordable;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'hs-opt' + (off ? ' off' : '') + (helperPick === o.key ? ' sel' : '');
+    b.innerHTML = '<span class="hs-radio"></span><span class="hs-txt"><span class="hs-name"></span><span class="hs-desc"></span></span><span class="hs-price"></span>';
+    b.querySelector('.hs-name').textContent = meta.name;
+    b.querySelector('.hs-desc').textContent = off ? 'แต้มไม่พอ' : (o.key === 'up' ? upgradeDesc() : meta.desc);
+    b.querySelector('.hs-price').textContent = o.price + ' แต้ม';
+    if (!off) b.addEventListener('click', () => { helperPick = o.key; renderHelperSheet(); });
+    list.appendChild(b);
+  });
+  const yes = document.getElementById('hsYes');
+  const sel = d && d.options.find((o) => o.key === helperPick);
+  yes.disabled = !sel;
+  yes.textContent = sel ? `ยืนยัน · ${sel.price} แต้ม` : 'เลือกตัวช่วย';
+}
+
+helperBtn.addEventListener('click', async () => {
+  if (busy) return;
+  helperPick = helperChoice;
+  const token = currentToken();
+  if (helperData && helperData.token === token && helperData.options.length) {   // ข้อมูลพร้อมแล้ว: ขึ้นรายการทันที ไม่โชว์ "กำลังโหลด"
+    renderHelperSheet();
+    helperSheet.hidden = false;
+    return;
+  }
+  helperSheet.hidden = false;
+  document.getElementById('hsList').innerHTML = '<p class="hs-sub" style="margin:18px 0">กำลังโหลด...</p>';
+  const d = await loadHelperInfo();
+  if (!d || !d.options.length) {
+    helperSheet.hidden = true;
+    showToast(d ? 'ตอนนี้ไม่มีตัวช่วยสำหรับกล่องนี้' : 'โหลดตัวช่วยไม่สำเร็จ กรุณาลองใหม่', 'error', 3000);
+    return;
+  }
+  renderHelperSheet();
+});
+document.getElementById('hsNo').addEventListener('click', () => {
+  helperChoice = null; helperPick = null;
+  helperBtn.classList.remove('on');
+  document.getElementById('helperBtnText').textContent = 'ตัวช่วย';
+  helperSheet.hidden = true;
+});
+document.getElementById('hsYes').addEventListener('click', () => {
+  const o = helperData && helperData.options.find((x) => x.key === helperPick);
+  if (!o) return;
+  helperChoice = o.key;
+  helperBtn.classList.add('on');
+  document.getElementById('helperBtnText').textContent = `${HELPER_META[o.key].short} · ${o.price} แต้ม`;
+  helperSheet.hidden = true;
+});
+helperSheet.addEventListener('click', (e) => { if (e.target === helperSheet) helperSheet.hidden = true; });
+
 function updateStartState() {
   renderStateUI();
   instruction.textContent = '';
@@ -294,14 +475,15 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 // ============================================================
 function spawnConfetti(count) {
   if (REDUCED_MOTION) return;
-  const colors = ['#E8B94A', '#F6D77C', '#C8202E', 'var(--tier)'];
+  const colors = PAL.drops || ['#E8B94A', '#F6D77C', '#C8202E', 'var(--tier)'];
+  const shape = PAL.shape;
   for (let i = 0; i < count; i++) {
     const p = document.createElement('div');
     p.className = 'confetti-piece';
     const w = 3 + Math.random() * 3;
     const h = w * (2 + Math.random() * 1.5);
-    p.style.width = w + 'px';
-    p.style.height = h + 'px';
+    if (shape) { const sz = w * (shape === 'snow' ? 1.8 : shape === 'drop' ? 2.2 : 3.2); p.style.width = sz + 'px'; p.style.height = (shape === 'drop' ? sz * 1.35 : sz) + 'px'; p.classList.add('shape-' + shape); }
+    else { p.style.width = w + 'px'; p.style.height = h + 'px'; }
     p.style.left = (Math.random() * 100) + 'vw';
     p.style.background = colors[Math.floor(Math.random() * colors.length)];
     p.style.animationDuration = (2.6 + Math.random() * 1.6) + 's';
@@ -309,6 +491,27 @@ function spawnConfetti(count) {
     confettiLayer.appendChild(p);
     setTimeout(() => p.remove(), 5000);
   }
+}
+
+// ---------- Jackpot Celebration ----------
+// ฝนเหรียญ/ดาวทอง 3 ระลอก (ไม่ใช้แฟลชเต็มจอ) — ใช้เฉพาะตอนได้ Jackpot
+function spawnGoldShower() {
+  if (REDUCED_MOTION) return;
+  const wave = (n) => {
+    for (let i = 0; i < n; i++) {
+      const p = document.createElement('div');
+      const star = Math.random() < 0.35;
+      p.className = 'confetti-piece gold' + (star ? ' star' : '');
+      const s = 7 + Math.random() * 7;
+      p.style.width = s + 'px'; p.style.height = s + 'px';
+      p.style.left = (Math.random() * 100) + 'vw';
+      p.style.animationDuration = (2.4 + Math.random() * 1.8) + 's';
+      p.style.animationDelay = (Math.random() * 0.5) + 's';
+      confettiLayer.appendChild(p);
+      setTimeout(() => p.remove(), 5200);
+    }
+  };
+  wave(34); setTimeout(() => wave(26), 700); setTimeout(() => wave(20), 1500);
 }
 
 // ตัวเลขนับขึ้นจาก 0 ตอนเฉลย
@@ -330,7 +533,7 @@ function countUp(el, to, dur = 900) {
 //  ถ้าผู้เล่นยังไม่กดหมุน/ปิดหน้าไปก่อน คูปองจะยังไม่ถูกใช้ กลับมาเล่นใหม่ได้
 //  ตัวเลขบนวงล้อระหว่างหมุนเป็นแค่ตัวล่อ (CAPSULE_NUMBERS) รางวัลจริงเฉลยจาก backend ตอนวงล้อหยุดเท่านั้น
 // ============================================================
-let wheelValues = [];       // ตัวเลขล่อ 7 ค่าที่สับตำแหน่งไว้บนวงล้อรอบนี้
+let wheelValues = [];       // ตัวเลขล่อ 12 ค่าที่สับตำแหน่งไว้บนวงล้อรอบนี้
 let wheelRotation = 0;      // มุมหมุนปัจจุบัน (เรเดียน)
 let wheelSize = 0;          // ขนาดจริง (css px) ของ canvas — คำนวณใหม่จาก .board ผ่าน layoutWheel()
 let wheelLoopHandle = null; // requestAnimationFrame handle ของช่วงหมุนวนไม่ทราบผล
@@ -339,15 +542,49 @@ const WHEEL_V0 = 0.011;     // ความเร็วสูงสุดตอ�
 const MIN_SPIN_MS  = 2500;  // หมุนเร็วคงที่อย่างน้อยกี่ ms ก่อนเริ่มชะลอ
 const DECEL_MIN_MS = 5000;  // ช่วงชะลอจนหยุดอย่างน้อยกี่ ms — ปรับตัวเลขนี้ได้ (แนะนำ 5000–6000)
 // สีบนวงล้อ — ช่องที่มีค่ามากที่สุดเป็นสีทองเสมอ ที่เหลือสลับแดง/ครีมเริ่มจากช่องถัดจากทองตามเข็มนาฬิกา
-// (7 ช่อง = ทอง 1 + แดง/ครีมอย่างละ 3 จึงไม่มีสีซ้ำชิดกัน) ไม่ผูกกับ tier ของผู้เช่า
+// (12 ช่อง = ทอง 1 + แดง/ครีมสลับกัน 11 ช่อง จึงไม่มีสีซ้ำชิดกัน) ไม่ผูกกับ tier ของผู้เช่า
 // ตัวเลขสับตำแหน่งใหม่ทุกรอบ ทองจึงย้ายตามเลขสูงสุดไปด้วย
+// ============================================================
+//  ธีมเทศกาล — เลือกอัตโนมัติจากเดือน (FEST_PERIODS) เดือนที่ไม่อยู่ในตาราง = วงล้อปกติแดงทองเดิม
+//  เพิ่มธีมใหม่ = เพิ่มชุดสีใน PALS + แถวใน FEST_PERIODS + ข้อความใน FEST_TEXT + สไตล์ใน style.css (html[data-fest="ชื่อ"])
+//  ลองดูธีมนอกช่วงเดือนได้โดยต่อท้ายลิงก์ ?fest=songkran (ผู้ใช้ทั่วไปไม่เห็น)
+// ============================================================
+const PALS = {
+  normal: { red:{bg:'#C8202E',ink:'#FFF4D6'}, cream:{bg:'#FFF1DC',ink:'#8E1019'}, gold:{bg:'#E8B94A',ink:'#4A0E14'},
+            rim:['#FFE9A8','#E8B94A','#B97F1C','#F6D77C'], groove:'#5A0E16', stroke:'rgba(255,233,168,.9)', bulbOn:'#FFFBE6', bulbGlow:'rgba(255,226,140,.95)', bulbOff:'#C98E22', deco:'bulb', drops:null, shape:null },
+  valentine: { red:{bg:'#D8315B',ink:'#FFFFFF'}, cream:{bg:'#FFEAF0',ink:'#B01E4A'}, gold:{bg:'#F6C26B',ink:'#6A1530'},
+            rim:['#FFE0EA','#F28FB0','#C2466F','#FFC2D6'], groove:'#7A1237', stroke:'rgba(255,255,255,.95)', bulbOn:'#FFFFFF', bulbGlow:'rgba(255,140,185,.95)', bulbOff:'#E07AA0', deco:'heart', drops:['#FF5C8A','#FFB3C7','#FFFFFF','#E0315B'], shape:'heart' },
+  songkran: { red:{bg:'#1597C2',ink:'#FFFFFF'}, cream:{bg:'#E8F9FD',ink:'#0A6A8E'}, gold:{bg:'#FFC94D',ink:'#6A3B00'},
+            rim:['#BFEFFF','#52C6E8','#1A8DB5','#A7E6F7'], groove:'#0B5878', stroke:'rgba(255,255,255,.95)', bulbOn:'#FFB000', bulbGlow:'rgba(255,190,40,.9)', bulbOff:'#F08A00', deco:'flower', drops:['#58C8EE','#BFEFFF','#FFFFFF','#FFB000'], shape:'drop' },
+  loykrathong: { red:{bg:'#1E3F8F',ink:'#FFE9A8'}, cream:{bg:'#FFF0D2',ink:'#1B2F6E'}, gold:{bg:'#FFB62E',ink:'#3A1A00'},
+            rim:['#FFE9A8','#E8B94A','#9C6B12','#FFE08A'], groove:'#0A1740', stroke:'rgba(255,233,168,.9)', bulbOn:'#FFD36A', bulbGlow:'rgba(255,165,40,.95)', bulbOff:'#9C6B12', deco:'flame', drops:['#FFB62E','#FFD36A','#FFF3C4','#FF8A1F'], shape:'spark' },
+  christmas: { red:{bg:'#C21F2E',ink:'#FFFFFF'}, cream:{bg:'#FFFFFF',ink:'#1E6B3C'}, gold:{bg:'#F2C14E',ink:'#4A0E14'},
+            rim:['#8EDDA9','#2E9A5A','#14653A','#6CC48E'], groove:'#0B3A22', stroke:'rgba(255,255,255,.95)', bulbOn:'#FFFFFF', bulbGlow:'rgba(255,255,255,.9)', bulbOff:'#7FA890', deco:'light', drops:['#FFFFFF','#E4F2FF','#FFFFFF','#C9E6FF'], shape:'snow' }
+};
+const FEST_PERIODS = window.FEST_PERIODS || [];   // ตารางเดือนอยู่ใน <head> ของ index.html
+let PAL = PALS.normal;
+function currentFest() {
+  const q = new URLSearchParams(location.search).get('fest');
+  if (q && PALS[q]) return q;
+  const md = new Date(Date.now() + 7 * 3600e3).toISOString().slice(5, 10);
+  const hit = FEST_PERIODS.find(f => md >= f.from && md <= f.to);
+  return hit ? hit.name : null;
+}
+function setFest(name) {
+  PAL = PALS[name] || PALS.normal;
+  if (name && PALS[name]) document.documentElement.dataset.fest = name;
+  const hg = document.getElementById('histGarland');   // พวงตกแต่งหัวหน้าประวัติ = สำเนาพวงด้านบนของธีมนั้น
+  if (hg) { hg.innerHTML = ''; const src = name && document.querySelector('.fest-top svg[data-for="' + name + '"]'); if (src) hg.appendChild(src.cloneNode(true)); }
+  else delete document.documentElement.dataset.fest;
+  if (typeof wheelValues !== 'undefined' && wheelValues.length) drawWheel();
+}
 const SLICE_RED   = { bg: '#C8202E', ink: '#FFF4D6' };
 const SLICE_CREAM = { bg: '#FFF1DC', ink: '#8E1019' };
 const SLICE_GOLD  = { bg: '#E8B94A', ink: '#4A0E14' };
 function sliceStyle(i, n, goldIdx) {
-  if (i === goldIdx) return SLICE_GOLD;
+  if (i === goldIdx) return PAL.gold;
   const k = (i - goldIdx - 1 + n) % n;   // ลำดับตั้งแต่ช่องหลังทองเป็นต้นไป
-  return k % 2 === 0 ? SLICE_RED : SLICE_CREAM;
+  return k % 2 === 0 ? PAL.red : PAL.cream;
 }
 const RIM_BULBS = 20; // จำนวนหลอดไฟบนกรอบทอง
 
@@ -448,17 +685,17 @@ function drawWheel(highlightIdx) {
 
   // กรอบทอง (ไม่หมุนตามช่อง) + ร่องแดงเข้มด้านใน
   const rim = ctx.createLinearGradient(0, 0, wheelSize, wheelSize);
-  rim.addColorStop(0, '#FFE9A8');
-  rim.addColorStop(0.35, '#E8B94A');
-  rim.addColorStop(0.65, '#B97F1C');
-  rim.addColorStop(1, '#F6D77C');
+  rim.addColorStop(0, PAL.rim[0]);
+  rim.addColorStop(0.35, PAL.rim[1]);
+  rim.addColorStop(0.65, PAL.rim[2]);
+  rim.addColorStop(1, PAL.rim[3]);
   ctx.beginPath();
   ctx.arc(center, center, R, 0, Math.PI * 2);
   ctx.fillStyle = rim;
   ctx.fill();
   ctx.beginPath();
   ctx.arc(center, center, r + 1.5, 0, Math.PI * 2);
-  ctx.fillStyle = '#5A0E16';
+  ctx.fillStyle = PAL.groove;
   ctx.fill();
 
   // ช่องรางวัล (ช่องที่มีเลขสูงสุดเป็นสีทอง)
@@ -483,7 +720,7 @@ function drawWheel(highlightIdx) {
     }
 
     ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(255,233,168,.9)';
+    ctx.strokeStyle = PAL.stroke;
     ctx.stroke();
 
     ctx.save();
@@ -491,7 +728,7 @@ function drawWheel(highlightIdx) {
     ctx.rotate(start + slice / 2);
     ctx.textAlign = 'right';
     ctx.fillStyle = c.ink;
-    const fontSize = Math.max(14, Math.min(26, wheelSize * 0.06));
+    const fontSize = Math.max(13, Math.min(26, wheelSize * (n > 8 ? 0.052 : 0.06)));
     ctx.font = '600 ' + fontSize + 'px "Anuphan","Sarabun",sans-serif';
     ctx.fillText(wheelValues[i] + '฿', r - 14, fontSize * 0.32);
     ctx.restore();
@@ -503,17 +740,32 @@ function drawWheel(highlightIdx) {
   for (let i = 0; i < RIM_BULBS; i++) {
     const ang = (i / RIM_BULBS) * Math.PI * 2 - Math.PI / 2;
     const on = (i + phase) % 2 === 0;
+    const bx = center + Math.cos(ang) * rb, by = center + Math.sin(ang) * rb, R = rimW * 0.27;
+    ctx.save();
+    let fill = on ? PAL.bulbOn : PAL.bulbOff;
+    if (PAL.deco === 'light') fill = (on ? ['#FF4A4A', '#FFD84A', '#FFFFFF', '#5CE08A'] : ['#A33B3B', '#A88A22', '#9DB5A5', '#2E8A52'])[i % 4];   // ไฟคริสต์มาสสลับสี
+    if (on) { ctx.shadowColor = (PAL.deco === 'light') ? fill : PAL.bulbGlow; ctx.shadowBlur = 8; }
+    ctx.fillStyle = fill;
     ctx.beginPath();
-    ctx.arc(center + Math.cos(ang) * rb, center + Math.sin(ang) * rb, rimW * 0.27, 0, Math.PI * 2);
-    if (on) {
-      ctx.fillStyle = '#FFFBE6';
-      ctx.shadowColor = 'rgba(255,226,140,.95)';
-      ctx.shadowBlur = 8;
+    if (PAL.deco === 'heart') {                         // หัวใจ
+      const s = R * 1.55;
+      ctx.moveTo(bx, by + s * 0.5);
+      ctx.bezierCurveTo(bx - s * 1.1, by - s * 0.1, bx - s * 0.5, by - s * 0.85, bx, by - s * 0.32);
+      ctx.bezierCurveTo(bx + s * 0.5, by - s * 0.85, bx + s * 1.1, by - s * 0.1, bx, by + s * 0.5);
+    } else if (PAL.deco === 'flame') {                  // เปลวเทียนกระทง
+      const s = R * 1.7;
+      ctx.moveTo(bx, by - s * 0.95);
+      ctx.bezierCurveTo(bx + s * 0.85, by - s * 0.2, bx + s * 0.7, by + s * 0.6, bx, by + s * 0.6);
+      ctx.bezierCurveTo(bx - s * 0.7, by + s * 0.6, bx - s * 0.85, by - s * 0.2, bx, by - s * 0.95);
     } else {
-      ctx.fillStyle = '#C98E22';
-      ctx.shadowBlur = 0;
+      ctx.arc(bx, by, R, 0, Math.PI * 2);
     }
     ctx.fill();
+    ctx.restore();
+    if (PAL.deco === 'flower') {                       // ดอกดาวเรือง (พวงมาลัยรอบวงล้อ): กลีบรอบวง + เกสรกลาง
+      for (let q = 0; q < 6; q++) { const a = q * Math.PI / 3; ctx.beginPath(); ctx.arc(bx + Math.cos(a) * rimW * 0.2, by + Math.sin(a) * rimW * 0.2, rimW * 0.15, 0, Math.PI * 2); ctx.fillStyle = on ? '#FFC21A' : '#F28C00'; ctx.fill(); }
+      ctx.beginPath(); ctx.arc(bx, by, rimW * 0.12, 0, Math.PI * 2); ctx.fillStyle = '#C45A00'; ctx.fill();
+    }
   }
   ctx.shadowBlur = 0;
 }
@@ -610,7 +862,7 @@ async function landOnAmount(amount) {
       if (!startTime) startTime = ts;
       const t = Math.min(1, (ts - startTime) / decelDuration);
       wheelRotation = startRotation + delta * (1 - Math.pow(1 - t, 3));
-      drawWheel(currentSliceIndex());
+      drawWheel();                                          // ไม่ไฮไลต์ช่องระหว่างชะลอ — ผู้เล่นจะได้ไม่รู้ผลก่อนวงล้อหยุด
       if (t < 1) requestAnimationFrame(frame);
       else resolve();
     }
@@ -627,9 +879,9 @@ async function landOnAmount(amount) {
       const t = Math.min(1, (ts - t0) / dur);
       const decay = Math.pow(1 - t, 2);
       wheelRotation = base + Math.sin(t * Math.PI * 3) * 0.045 * decay;
-      drawWheel(targetIndex);
+      drawWheel();                                          // ช่วงส่ายก่อนหยุดก็ยังไม่ไฮไลต์
       if (t < 1) requestAnimationFrame(frame);
-      else { wheelRotation = base; drawWheel(targetIndex); resolve(); }
+      else { wheelRotation = base; drawWheel(); resolve(); }   // หยุดสนิท ไม่ไฮไลต์ช่อง
     }
     requestAnimationFrame(frame);
   });
@@ -640,28 +892,31 @@ function presentTicket(milestone, amount, celebrate = true) {
   const isJackpot = Number(amount) >= JACKPOT_AMOUNT;
   ticketTier.textContent = isJackpot ? 'Jackpot' : `${boxNameFor(milestone)} Coupon`;
   ticket.classList.toggle('jackpot', isJackpot);
+  revealCard.dataset.jp = isJackpot ? '1' : '0';   // เปิดแสงรัศมีทองหลังตั๋วผ่าน CSS
   ticketDesc.textContent = 'หักจากบิลรอบถัดไปโดยอัตโนมัติ';
   ticket.setAttribute('aria-label', `${boxNameFor(milestone)} Coupon ส่วนลดค่าเช่า ${amount} บาท`);
   ticket.classList.add('show');
   claimBtn.classList.add('show');
   if (celebrate) {
     countUp(ticketAmt, amount);
-    spawnConfetti(isJackpot ? 60 : 16);
+    if (isJackpot) spawnGoldShower();
+    else spawnConfetti(16);
   } else {
     ticketAmt.textContent = amount;
   }
 }
 
 // เล่น 1 รอบเต็ม: สับเลขล่อ → ยิง backend จริงทันที (กดเริ่มครั้งเดียวจบ) → หมุนวนรอผล → ชะลอไปหยุดที่ผลจริง → เฉลย
-async function playRound(milestone, requestOpen) {
+async function playRound(milestone, requestOpen, spinText, respinToken) {
   setState('play');
+  revealCard.dataset.jp = '0';
   buildWheelValues();
   ticket.classList.remove('show');
   claimBtn.classList.remove('show');
 
   setPhase(1);
-  setTitle('กำลังลุ้นรางวัล');
-  setHint('กรุณารอสักครู่');
+  setTitle((spinText && spinText.title) || 'กำลังลุ้นรางวัล');
+  setHint((spinText && spinText.hint) || 'กรุณารอสักครู่');
 
   // ยิงคำขอเปิดคูปองจริงทันทีที่เริ่มรอบ (ผู้เล่นกดเริ่มไปแล้วครั้งเดียว ถือว่าคอมมิทแล้ว)
   const apiPromise = requestOpen();
@@ -674,18 +929,23 @@ async function playRound(milestone, requestOpen) {
   }
 
   const amount = Number(result.discount_amount) || 0;
+  // ถามสิทธิ์ลุ้นอีกครั้งตั้งแต่ได้ผล (ระหว่างวงล้อกำลังหยุด) เพื่อให้ปุ่มคู่ขึ้นพร้อมตั๋วในจังหวะเดียว ไม่ขยับทีหลัง
+  const respinPre = (respinToken && milestone !== 'PAID')
+    ? callGAS('respinInfo', { token: respinToken }, 8000).catch(() => null)
+    : null;
   setPhase(2);
   await landOnAmount(amount);
 
-  await wait(600); // ให้วงล้อนิ่งสนิทและเห็นช่องที่หยุดก่อน flash
+  await wait(500); // ให้วงล้อนิ่งสนิทและเห็นช่องที่หยุดสักครู่ แล้วขึ้นตั๋วเลย (ตัดแฟลชหน้าจอออกแล้ว)
 
-  screenFlash.classList.remove('go'); void screenFlash.offsetWidth; screenFlash.classList.add('go');
-  await wait(450);
+  const offer = respinPre ? await withTimeout(respinPre, 1500, null) : null;   // ปกติตอบแล้วก่อนถึงตรงนี้ ไม่เสียเวลา
 
   setState('result');
   const jackpot = amount >= JACKPOT_AMOUNT;
   setTitle(jackpot ? 'JACKPOT! ยินดีด้วย' : 'ขอแสดงความยินดี');
-  setHint('คุณได้รับส่วนลดค่าเช่า');
+  setHint(jackpot ? 'รางวัลพิเศษประจำเดือนนี้ เป็นของคุณ' : (pendingHint || 'คุณได้รับส่วนลดค่าเช่า'));
+  pendingHint = null;
+  applyRespinOffer(offer);          // จัดแถวปุ่มก่อน แล้วค่อยโชว์ตั๋ว+ปุ่ม พร้อมกัน
   presentTicket(milestone, amount);
 
   return { success: true, result };
@@ -701,26 +961,119 @@ function showQuickTicket(milestone, amount) {
   presentTicket(milestone, amount, false);
 }
 
+// ============================================================
+//  ลุ้นอีกครั้งด้วยแต้มเช็คอิน (กล่อง 7/14/21/28 เท่านั้น — ไม่รวม PAID) — ปุ่มขึ้นเฉพาะตอนได้รางวัลต่ำสุดของกล่อง
+//  ฝั่ง backend ตัดสินทุกอย่าง (สิทธิ์ ราคา เวลา แต้ม) — ฝั่งนี้แค่ถามสิทธิ์แล้วแสดงปุ่ม
+// ============================================================
+let lastOpen = null;       // { milestone, token, amount } ของกล่องที่เพิ่งเปิด
+let respinInfo = null;     // { cost, points } ที่ backend ตอบล่าสุด
+let respinTimer = null;
+const RESPIN_WINDOW_MS = 10 * 60 * 1000 - 20000;   // ซ่อนปุ่มก่อน backend ตัดเวลา (10 นาที) เล็กน้อย
+
+function hideRespin() {
+  clearTimeout(respinTimer);
+  respinBtn.style.display = 'none';
+  claimRow.classList.remove('two');
+  respinSheet.hidden = true;
+  respinInfo = null;
+}
+
+function applyRespinOffer(r) {
+  if (!r || !r.success || !r.eligible) return;
+  respinInfo = { cost: Number(r.cost) || 0, points: Number(r.points) || 0 };
+  respinBtn.innerHTML = 'ลุ้นอีกครั้ง';
+  respinBtn.style.display = 'flex';
+  respinBtn.classList.remove('in'); void respinBtn.offsetWidth; respinBtn.classList.add('in');
+  claimRow.classList.add('two');
+  clearTimeout(respinTimer);
+  respinTimer = setTimeout(hideRespin, RESPIN_WINDOW_MS);
+}
+
+respinBtn.addEventListener('click', () => {
+  if (!lastOpen || !respinInfo) return;
+  document.getElementById('respinCost').textContent = respinInfo.cost;
+  document.getElementById('respinCost2').textContent = respinInfo.cost;
+  document.getElementById('respinOld').textContent = lastOpen.amount;
+  respinSheet.hidden = false;
+});
+function showRespinResult(oldAmt, newAmt) {
+  if (newAmt > oldAmt) {
+    setTitle('เพิ่มขึ้นแล้ว!');
+    setHint(`เพิ่มจาก ${oldAmt} เป็น ${newAmt} บาท`);
+  } else {
+    setTitle('เท่าเดิม แต่คุณลองแล้ว');
+    setHint(`ส่วนลด ${newAmt} บาท เป็นอันสุดท้ายของกล่องนี้`);
+  }
+}
+document.getElementById('respinNo').addEventListener('click', () => { respinSheet.hidden = true; });
+
+document.getElementById('respinYes').addEventListener('click', async () => {
+  if (busy || !lastOpen) return;
+  const open = lastOpen;
+  hideRespin();
+  busy = true;
+  claimBtn.classList.remove('show');
+
+  const call = () => callGAS('respinLootBox', { token: open.token }, 30000)
+    .catch(() => ({ success: false, hardFail: true }));
+  const outcome = await playRound(open.milestone, () => withTimeout(call(), 30000, { success: false, hardFail: true }),
+    { title: 'ลองอีกสักตั้ง!', hint: 'กำลังหมุน...' });
+
+  if (outcome.success) {
+    const newAmt = Number(outcome.result.discount_amount) || 0;
+    lastOpen = null;
+    refreshHelperInfo();   // แต้มลด ต้องอัปเดตตัวเลือกตัวช่วยของกล่องถัดไป
+    showRespinResult(open.amount, newAmt);
+    busy = false;
+    return;
+  }
+
+  // ไม่สำเร็จ: ถ้าไม่รู้ผล (เน็ตสะดุด) ลองถามซ้ำ 1 ครั้ง — ฝั่ง backend ส่งซ้ำได้อย่างปลอดภัย (คืนผลเดิม ไม่หักแต้มซ้ำ)
+  let r = outcome.result;
+  if (r && r.hardFail) { await wait(1500); r = await call(); }
+  if (r && r.success) {
+    const newAmt = Number(r.discount_amount) || 0;
+    setState('result');
+    showRespinResult(open.amount, newAmt);
+    presentTicket(open.milestone, newAmt, false);
+    lastOpen = null;
+    refreshHelperInfo();
+  } else {
+    // กลับไปแสดงตั๋วใบเดิม (ผลเดิมยังอยู่ ไม่เสียแต้มถ้า backend ไม่ได้หัก)
+    setState('result');
+    setTitle('ขอแสดงความยินดี');
+    setHint('คุณได้รับส่วนลดค่าเช่า');
+    presentTicket(open.milestone, open.amount, false);
+    showToast((r && !r.hardFail && r.message) || 'ยังไม่ทราบผล กรุณาตรวจสอบในประวัติ', 'error', 5000);
+    lastOpen = null;
+  }
+  busy = false;
+});
+
 async function startRound() {
   if (busy) return; // กันกดซ้ำระหว่างรอบกำลังเล่นอยู่
   if (stock.length === 0) { instruction.textContent = "ขณะนี้ไม่มีสิทธิ์ให้ใช้"; return; }
   busy = true;
+  hideRespin();
   startBtn.classList.add('hide');
   retryBtn.style.display = 'none';
   instruction.textContent = "";
 
   const milestone = stock[0];
   const token = lootTokens[milestone];
+  const helperKey = (milestone !== 'PAID' && helperChoice) ? helperChoice : '';
+  helperSheet.hidden = true;
 
   const HARD_TIMEOUT_MS = 30000;   // เวลารอ backend หลังผู้เล่นกดเริ่ม (มิลลิวินาที) — ปรับตัวเลขนี้ได้
 
   // ส่งคำขอเปิดจริง "ตอนผู้เล่นกดเริ่ม" (playRound เป็นคนเรียก)
   // request ไม่ถูกยกเลิกแม้ backend จะตอบช้า (auto-resync ผ่าน HARD_TIMEOUT_MS ถ้าช้าเกินไปจริงๆ)
   const requestOpen = () => {
-    const realPromise = callGAS('openLootBox', { token }, 45000).catch((err) => {
+    const realPromise = callGAS('openLootBox', { token, helper: helperKey }, 45000).catch((err) => {
       console.error('openLootBox failed:', err);
       return { success: false, message: 'เชื่อมต่อกับระบบไม่สำเร็จ' };
     });
+    realPromise.then((res) => { setHelperHint(res, milestone); if (res && res.success && !res.already) prefetchNextHelper(); });
     return withTimeout(
       realPromise,
       HARD_TIMEOUT_MS,
@@ -728,11 +1081,14 @@ async function startRound() {
     );
   };
 
-  const outcome = await playRound(milestone, requestOpen);
+  const outcome = await playRound(milestone, requestOpen, null, token);
 
+  resetHelper();   // ไม่ว่าสำเร็จหรือไม่ ล้างตัวช่วยที่เลือกไว้ (ราคา/แต้มอาจเปลี่ยน ให้เลือกใหม่ได้)
   if (outcome.success) {
     stock.shift();
     delete lootTokens[milestone];
+    adoptNextHelper();   // กล่องใบถัดไป (ถ้ามี): ใช้ข้อมูลที่ดึงรอไว้แล้วตั้งแต่ backend ตอบ (ไม่มี = ดึงใหม่)
+    lastOpen = { milestone, token, amount: Number(outcome.result.discount_amount) || 0 };
     updateStockCount();
     clearCacheSnapshot();   // กันหน้าเปิดรอบหน้าโชว์สิทธิ์เก่าที่เพิ่งใช้ไป
     busy = false;
@@ -799,6 +1155,8 @@ async function startRound() {
 }
 
 claimBtn.addEventListener('click', () => {
+  hideRespin();
+  lastOpen = null;
   ticket.classList.remove('show');
   claimBtn.classList.remove('show');
   updateStockCount();
@@ -841,6 +1199,21 @@ function applyRoomData(result) {
     }
   });
 
+  // ข้อมูลตัวช่วยที่ backend แนบมากับข้อมูลกล่อง (ไม่ต้องเรียก helperInfo แยก) — ใช้เฉพาะเมื่อ token ตรงกับกล่องใบแรก
+  const h = result.helper;
+  if (h && stock.length && h.token === lootTokens[stock[0]] && stock[0] !== 'PAID') {
+    helperData = {
+      token: h.token,
+      points: Number(h.points) || 0,
+      options: (h.eligible && Array.isArray(h.options)) ? h.options : []
+    };
+    if (helperChoice && !helperData.options.some((o) => o.key === helperChoice && o.affordable)) {
+      helperChoice = null;
+      helperBtn.classList.remove('on');
+      document.getElementById('helperBtnText').textContent = 'ตัวช่วย';
+    }
+  }
+
   updateStockCount();
 }
 
@@ -851,6 +1224,7 @@ function renderCabinet(result) {
   applyRoomData(result);
   busy = false;
   updateStartState();
+  syncHelperBtn();
   saveCacheSnapshot(result);
   warmBgm();
 }
@@ -1015,7 +1389,7 @@ function renderHistory(history) {
       const meta = getTierMeta(it.tier);
       const amountHtml = it.opened
         ? `<span class="h-amount">฿${Number(it.amount).toLocaleString()}</span>`
-        : `<span class="h-amount is-muted">ยังไม่ได้ใช้สิทธิ์</span>`;
+        : `<span class="h-amount is-muted">ไม่ใช้สิทธิ์</span>`;
       return `
         <li class="h-row">
           <span class="h-tier" style="--tier-color:${meta.color}">
@@ -1094,6 +1468,7 @@ async function bootLoad() {
 }
 
 async function init() {
+  setFest(currentFest());   // เลือกธีมเทศกาลตามเดือน
   applyTier('Member'); // ค่าเริ่มต้นก่อนรู้ tier จริง
   startBtn.classList.add('hide'); // ปิดจนกว่าจะโหลดข้อมูลจริงเสร็จ
   buildWheelValues();   // วาดวงล้อรอไว้ทันที (ตัวเลขล่อ) ไม่ให้เป็นวงกลมว่างระหว่างรอข้อมูล
