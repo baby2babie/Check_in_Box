@@ -220,7 +220,7 @@ body.lock{ overflow:hidden; }
 .app[data-state="error"] .stage{ opacity:.5; transition:opacity .3s ease; }
 .app[data-state="empty"] .wheel-shell{ opacity:.2; }
 /* ตอนเฉลยรางวัล: ซ่อนวงล้อ แล้วใช้แสงสีธีมหลังตั๋วแทน (ป้ายไม่ได้อยู่ใน .wheel-shell จึงไม่จางตาม) */
-.app[data-state="result"] .wheel-shell{ opacity:0; }
+.app[data-state="result"] .wheel-shell{ opacity:0; transform:scale(.78); }   /* วงล้อย่อเล็กลงพร้อมจางหาย ตั๋วเด้งขึ้นมาแทนที่ตรงกลาง */
 .board::before{                                          /* แสงเรืองหลังตั๋ว สีตาม --tier ของผู้เช่า */
   content:""; position:absolute; inset:-8%; border-radius:50%; pointer-events:none;
   background:radial-gradient(circle,
@@ -239,7 +239,7 @@ body.lock{ overflow:hidden; }
 .wheel-shell{
   position:absolute; inset:0;
   display:flex; align-items:center; justify-content:center;
-  transition:opacity .4s ease;
+  transition:opacity .4s ease, transform .5s var(--ease);
 }
 .wheel-pointer{
   position:absolute; top:1%; left:50%; transform:translateX(-50%);
@@ -272,7 +272,7 @@ body.lock{ overflow:hidden; }
 .ticket{
   position:absolute; left:50%; top:50%;
   width:min(74%, 260px);
-  transform:translate(-50%, -46%) scale(.94);
+  transform:translate(-50%, -50%) scale(.55);
   opacity:0; visibility:hidden; pointer-events:none;
   z-index:5;
   filter:drop-shadow(0 1px 1px rgba(28,35,32,.06)) drop-shadow(0 22px 26px rgba(28,35,32,.16));
@@ -281,7 +281,7 @@ body.lock{ overflow:hidden; }
 .ticket.show{
   opacity:1; visibility:visible; pointer-events:auto;
   transform:translate(-50%, -50%) scale(1);
-  transition:transform .7s var(--ease), opacity .45s ease, visibility 0s;
+  transition:transform .6s cubic-bezier(.34,1.45,.64,1), opacity .3s ease, visibility 0s;   /* เด้งเกินเล็กน้อยแล้วนิ่ง */
 }
 
 .ticket-paper{
@@ -372,6 +372,68 @@ body.lock{ overflow:hidden; }
   padding:0 14px; text-align:center; text-wrap:balance;
   background:var(--paper);                               /* ขาวเหมือนส่วนบน — ไม่กลืนพื้นหลังงาช้างเหมือนสีอ่อนตามระดับ */
   font-size:13px; line-height:1.5; color:var(--tier-ink);
+}
+
+/* ============================================================
+   JACKPOT TICKET — ตั๋วรางวัลใหญ่สุด: พื้นดำทองเข้ม + ฟอยล์ทอง ไม่ใช้สีตามระดับ (tier) ให้ต่างจากตั๋วทั่วไปชัดเจน
+   ============================================================ */
+.ticket.jackpot{
+  width:min(78%, 276px);
+  animation:jpGlow 2.6s ease-in-out .9s infinite;
+}
+@keyframes jpGlow{
+  0%,100%{ filter:drop-shadow(0 1px 1px rgba(0,0,0,.25)) drop-shadow(0 22px 28px rgba(60,38,0,.38)) drop-shadow(0 0 10px rgba(232,185,74,.35)); }
+  50%    { filter:drop-shadow(0 1px 1px rgba(0,0,0,.25)) drop-shadow(0 22px 28px rgba(60,38,0,.38)) drop-shadow(0 0 26px rgba(255,214,102,.75)); }
+}
+.ticket.jackpot .ticket-paper{
+  background:
+    radial-gradient(120% 70% at 50% 0%, #4A3410 0%, rgba(74,52,16,0) 60%),
+    linear-gradient(170deg, #20170A 0%, #130E05 55%, #1B1307 100%);
+}
+.ticket.jackpot .ticket-paper::before{                  /* กรอบทองด้านในแทนแถบสีบางๆ */
+  inset:7px; height:auto; background:none; border-radius:12px;
+  border:1.5px solid #E8B94A99;
+  box-shadow:inset 0 0 0 3px rgba(232,185,74,.10), inset 0 0 18px rgba(232,185,74,.12);
+  pointer-events:none; z-index:1;
+}
+.ticket.jackpot.show .ticket-paper::after{              /* แสงวิ่งผ่านทอง วนซ้ำเบาๆ */
+  background:linear-gradient(105deg, transparent 36%, rgba(255,233,168,.55) 50%, transparent 64%);
+  animation:sheen 1.2s var(--ease) .35s 1 forwards, jpSheen 4.2s ease-in-out 2.4s infinite;
+  z-index:2;
+}
+@keyframes jpSheen{ 0%{ transform:translateX(-120%); } 38%,100%{ transform:translateX(120%); } }
+.ticket.jackpot .ticket-top::before{ color:#E8B94A; opacity:.10; }   /* ลายน้ำ ฿ ทองจาง */
+.ticket.jackpot .ticket-tier{
+  color:#FFE9A8; font-weight:700; letter-spacing:.32em; text-transform:uppercase; padding-left:1.5cqw;
+}
+.ticket.jackpot .ticket-dot{                            /* จุดกลม → ดาวทอง */
+  width:4.6cqw; height:4.6cqw; border-radius:0; background:linear-gradient(180deg,#FFF1C2,#E8B94A);
+  clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+}
+.ticket.jackpot #ticketAmount{
+  font-weight:700;
+  background:linear-gradient(180deg,#FFF6D6 0%,#FFD966 22%,#E8B94A 45%,#B8841F 70%,#FFE08A 100%);
+  background-size:100% 200%; background-position:0 0;
+  -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:transparent;
+  filter:drop-shadow(0 2px 0 rgba(0,0,0,.55)) drop-shadow(0 0 14px rgba(232,185,74,.45));
+  animation:jpFoil 3.4s ease-in-out infinite alternate;
+}
+@keyframes jpFoil{ to{ background-position:0 100%; } }
+.ticket.jackpot .ticket-amount small{ color:#FFD966; }
+.ticket.jackpot .ticket-label{ color:#F3DFA6; font-weight:600; letter-spacing:.04em; }
+.ticket.jackpot .ticket-perf{
+  background:radial-gradient(circle, #E8B94A 1.5px, transparent 1.8px) 0 50% / 9px 4px repeat-x; opacity:.9;
+}
+.ticket.jackpot .ticket-bottom{ background:transparent; color:#E9D49A; z-index:1; }
+.ticket.jackpot .ticket-top::after{                     /* ประกายดาว */
+  content:"✦"; position:absolute; right:9cqw; top:8cqw; font-size:8cqw; color:#FFE9A8;
+  text-shadow:0 0 8px #FFD966; animation:jpTwinkle 1.8s ease-in-out infinite;
+}
+@keyframes jpTwinkle{ 0%,100%{ opacity:.25; transform:scale(.7) rotate(0); } 50%{ opacity:1; transform:scale(1.15) rotate(20deg); } }
+@media (prefers-reduced-motion: reduce){
+  .ticket.jackpot, .ticket.jackpot #ticketAmount, .ticket.jackpot .ticket-top::after,
+  .ticket.jackpot.show .ticket-paper::after{ animation:none; }
 }
 
 /* ============================================================
@@ -515,3 +577,234 @@ body.lock{ overflow:hidden; }
   }
   .confetti-layer{ display:none; }
 }
+/* ============================================================
+   ธีมเทศกาล — ใช้เมื่อ <html data-fest="ชื่อธีม"> (valentine / songkran / loykrathong / christmas)
+   ธีมปกติไม่แสดงของตกแต่งเหล่านี้ เลเยอร์ตกแต่งอยู่หลังเนื้อหา (z-index:-1) ไม่บังปุ่ม/ข้อความ
+   ============================================================ */
+.fest-top, .fest-particles, .fest-bottom{ display:none; }
+html[data-fest] .app{ position:relative; z-index:1; padding-bottom:max(40px, env(safe-area-inset-bottom)); }
+html[data-fest] .fest-particles{ display:block; position:fixed; inset:0; pointer-events:none; z-index:-1; overflow:hidden; }
+html[data-fest] .fest-bottom{ position:fixed; left:0; right:0; bottom:0; height:44px; pointer-events:none; z-index:-1; }
+.fest-bottom svg{ width:100%; height:100%; display:block; }
+html[data-fest="valentine"] .fest-bottom[data-for="valentine"], html[data-fest="songkran"] .fest-bottom[data-for="songkran"],
+html[data-fest="loykrathong"] .fest-bottom[data-for="loykrathong"], html[data-fest="christmas"] .fest-bottom[data-for="christmas"]{ display:block; }
+html[data-fest] .fest-bottom{ display:none; }
+html[data-fest="valentine"] .fest-bottom[data-for="valentine"], html[data-fest="songkran"] .fest-bottom[data-for="songkran"],
+html[data-fest="loykrathong"] .fest-bottom[data-for="loykrathong"], html[data-fest="christmas"] .fest-bottom[data-for="christmas"]{ display:block; }
+html[data-fest] .fest-top{ display:block; position:fixed; top:0; left:0; right:0; height:28px; pointer-events:none; z-index:2; }
+.fest-top svg{ display:none; width:100%; height:100%; }
+html[data-fest="valentine"] .fest-top svg[data-for="valentine"], html[data-fest="songkran"] .fest-top svg[data-for="songkran"],
+html[data-fest="loykrathong"] .fest-top svg[data-for="loykrathong"], html[data-fest="christmas"] .fest-top svg[data-for="christmas"]{ display:block; }
+/* อนุภาคลอยตก/ลอยขึ้น */
+.fest-particles i{ position:absolute; top:-24px; animation:festFall linear infinite; opacity:0; }
+.fest-particles i:nth-child(1){ left:6%;  animation-duration:9s;    animation-delay:0s; }
+.fest-particles i:nth-child(2){ left:17%; animation-duration:12s;   animation-delay:2s; }
+.fest-particles i:nth-child(3){ left:28%; animation-duration:10s;   animation-delay:4s; }
+.fest-particles i:nth-child(4){ left:39%; animation-duration:13s;   animation-delay:1s; }
+.fest-particles i:nth-child(5){ left:50%; animation-duration:9.5s;  animation-delay:3s; }
+.fest-particles i:nth-child(6){ left:61%; animation-duration:11s;   animation-delay:5s; }
+.fest-particles i:nth-child(7){ left:72%; animation-duration:10.5s; animation-delay:.5s; }
+.fest-particles i:nth-child(8){ left:83%; animation-duration:12.5s; animation-delay:6s; }
+.fest-particles i:nth-child(9){ left:91%; animation-duration:9.8s;  animation-delay:2.6s; }
+.fest-particles i:nth-child(10){ left:96%; animation-duration:11.5s; animation-delay:4.4s; }
+@keyframes festFall{ 0%{ transform:translate(0,0) rotate(0); opacity:0; } 8%{ opacity:1; } 92%{ opacity:.85; } 100%{ transform:translate(14px,105vh) rotate(40deg); opacity:0; } }
+@keyframes festRise{ 0%{ transform:translate(0,0); opacity:0; } 10%{ opacity:1; } 90%{ opacity:.85; } 100%{ transform:translate(-18px,-108vh); opacity:0; } }
+@media (prefers-reduced-motion: reduce){ .fest-particles i{ animation:none; display:none; } }
+/* ผลเฉลย: ชิ้นกระดาษ → รูปทรงตามเทศกาล */
+.confetti-piece.shape-drop{ border-radius:50% 50% 50% 50% / 62% 62% 38% 38%; box-shadow:inset -1.5px -1.5px 0 rgba(255,255,255,.6); }
+.confetti-piece.shape-snow{ border-radius:50%; }
+.confetti-piece.shape-heart{ -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21C3 14 0 10 0 6.5A6 6 0 0 1 12 4a6 6 0 0 1 12 2.5C24 10 21 14 12 21z'/%3E%3C/svg%3E") center/contain no-repeat; mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21C3 14 0 10 0 6.5A6 6 0 0 1 12 4a6 6 0 0 1 12 2.5C24 10 21 14 12 21z'/%3E%3C/svg%3E") center/contain no-repeat; border-radius:0; }
+.confetti-piece.shape-spark{ clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%); border-radius:0; }
+
+/* ---------- วาเลนไทน์ (ก.พ.) ---------- */
+html[data-fest="valentine"]{ --page:#FFF0F4; --red:#E0315B; --red-deep:#A31342; --ink-2:#8E4B63; --line:rgba(120,30,60,.18); }
+html[data-fest="valentine"] body{ background:radial-gradient(120% 55% at 50% 0%, #FFD0DF 0%, rgba(255,208,223,0) 68%), radial-gradient(90% 40% at 50% 100%, #FFD9E5 0%, rgba(255,217,229,0) 70%), #FFF0F4; }
+html[data-fest="valentine"] .btn.primary{ background:linear-gradient(180deg,#FF7BA2 0%,#E0315B 52%,#B01E4A 100%); }
+html[data-fest="valentine"] .fest-particles i{ width:15px; height:14px; -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21C3 14 0 10 0 6.5A6 6 0 0 1 12 4a6 6 0 0 1 12 2.5C24 10 21 14 12 21z'/%3E%3C/svg%3E") center/contain no-repeat; mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21C3 14 0 10 0 6.5A6 6 0 0 1 12 4a6 6 0 0 1 12 2.5C24 10 21 14 12 21z'/%3E%3C/svg%3E") center/contain no-repeat; background:#FF7FA5; }
+html[data-fest="valentine"] .fest-particles i:nth-child(even){ background:#FFB3C7; width:11px; height:10px; }
+html[data-fest="valentine"] .fest-particles i:nth-child(3n){ background:#E0315B; }
+
+/* ---------- สงกรานต์ (เม.ย.) ---------- */
+html[data-fest="songkran"]{ --page:#EAF8FC; --ink-2:#4F7C8C; --red:#F26B21; --red-deep:#065A7A; --gold:#FFC94D; --line:rgba(11,58,76,.16); }
+html[data-fest="songkran"] body{ background:radial-gradient(120% 55% at 50% 0%, #BDEBFA 0%, rgba(189,235,250,0) 68%), radial-gradient(90% 40% at 50% 100%, #CFF1FA 0%, rgba(207,241,250,0) 70%), #EAF8FC; }
+html[data-fest="songkran"] .btn.primary{ background:linear-gradient(180deg,#3FC3EC 0%,#1597C2 52%,#0B6F94 100%); }
+html[data-fest="songkran"] .fest-particles i{ width:9px; height:13px; border-radius:50% 50% 50% 50% / 62% 62% 38% 38%; background:rgba(82,198,232,.6); box-shadow:inset -1.5px -1.5px 0 rgba(255,255,255,.55); }
+html[data-fest="songkran"] .fest-particles i:nth-child(even){ width:7px; height:10px; }
+
+/* ---------- ลอยกระทง (พ.ย.) ---------- */
+html[data-fest="loykrathong"]{ --red:#FFD36A; --gold:#E8B94A; --line:rgba(244,236,210,.28); }
+html[data-fest="loykrathong"] body{ background:
+  radial-gradient(circle at 86% 9%, #FFF6D0 0 13px, rgba(255,240,190,.55) 14px 24px, rgba(255,240,190,.16) 25px 58px, rgba(255,240,190,0) 59px),
+  radial-gradient(120% 55% at 50% 0%, #25468F 0%, rgba(37,70,143,0) 68%), radial-gradient(90% 40% at 50% 100%, #3A2A12 0%, rgba(58,42,18,0) 70%), #0B1B3A; }
+html[data-fest="loykrathong"] .btn.primary{ background:linear-gradient(180deg,#FFE08A 0%,#F2B93B 52%,#B97F1C 100%); color:#2A1A00; text-shadow:0 1px 0 rgba(255,255,255,.4); }
+html[data-fest="loykrathong"] .fest-particles i{ top:auto; bottom:-24px; width:11px; height:15px; border-radius:45% 45% 40% 40%; animation-name:festRise; animation-duration:16s;
+  background:radial-gradient(circle at 50% 70%, #FFF3C4 0%, #FFB62E 55%, #FF8A1F 100%); box-shadow:0 0 12px 3px rgba(255,170,40,.65); }
+html[data-fest="loykrathong"] .fest-particles i:nth-child(odd){ animation-duration:19s; }
+html[data-fest="loykrathong"] .fest-particles i:nth-child(3n){ width:8px; height:11px; }
+
+/* ---------- คริสต์มาส (ธ.ค.) ---------- */
+html[data-fest="christmas"]{ --red:#FFD84A; --gold:#F2C14E; --line:rgba(255,255,255,.3); }
+html[data-fest="christmas"] body{ background:radial-gradient(120% 55% at 50% 0%, #1E7A52 0%, rgba(30,122,82,0) 68%), radial-gradient(90% 40% at 50% 100%, #0A2A1E 0%, rgba(10,42,30,0) 70%), #0F3B2A; }
+html[data-fest="christmas"] .fest-particles i{ width:6px; height:6px; border-radius:50%; background:#fff; box-shadow:0 0 5px rgba(255,255,255,.9); }
+html[data-fest="christmas"] .fest-particles i:nth-child(even){ width:4px; height:4px; }
+html[data-fest="christmas"] .fest-particles i:nth-child(3n){ width:8px; height:8px; }
+
+/* ธีมมืด (ลอยกระทง/คริสต์มาส): ข้อความหน้าหลักเป็นสีอ่อน — ไม่แตะตั๋วและหน้าประวัติ */
+html[data-fest="loykrathong"] .brand h1, html[data-fest="christmas"] .brand h1{ color:#F7F0DA; }
+html[data-fest="loykrathong"] .room, html[data-fest="loykrathong"] .hint, html[data-fest="loykrathong"] .footnote, html[data-fest="loykrathong"] .notice, html[data-fest="loykrathong"] .icon-btn, html[data-fest="loykrathong"] .pill-btn{ color:#C9D2EA; }
+html[data-fest="christmas"] .room, html[data-fest="christmas"] .hint, html[data-fest="christmas"] .footnote, html[data-fest="christmas"] .notice, html[data-fest="christmas"] .icon-btn, html[data-fest="christmas"] .pill-btn{ color:#D5EBDD; }
+html[data-fest="loykrathong"] .title{ color:#FFE08A; } html[data-fest="christmas"] .title{ color:#FFE9A8; }
+html[data-fest="loykrathong"] .app .btn.ghost, html[data-fest="christmas"] .app .btn.ghost{ color:#F7F0DA; }
+html[data-fest="loykrathong"] .icon-btn:hover, html[data-fest="christmas"] .icon-btn:hover{ background:rgba(255,255,255,.1); }
+
+/* ---------- จุดกลางวงล้อ แยกตามธีม ---------- */
+html[data-fest] .wheel-hub::before{ content:""; position:absolute; left:50%; top:-9px; transform:translateX(-50%); width:20px; height:18px; background:center/contain no-repeat; }
+/* วาเลนไทน์: ปุ่มกลางสีกุหลาบ ขอบขาว มีหัวใจเล็กเกาะด้านบน */
+html[data-fest="valentine"] .wheel-hub{ background:radial-gradient(circle at 35% 28%, #FF9DBA 0%, #E0315B 55%, #A31342 100%); box-shadow:0 0 0 3px #FFFFFF, 0 0 0 5px #F28FB0, 0 8px 18px rgba(120,20,50,.4); }
+html[data-fest="valentine"] .wheel-hub-num{ color:#FFFFFF; text-shadow:0 1px 2px rgba(120,10,40,.5); }
+html[data-fest="valentine"] .wheel-hub-label{ color:#FFE3EC; }
+html[data-fest="valentine"] .wheel-hub::before{ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21C3 14 0 10 0 6.5A6 6 0 0 1 12 4a6 6 0 0 1 12 2.5C24 10 21 14 12 21z' fill='%23FFFFFF' stroke='%23E0315B' stroke-width='1.4'/%3E%3C/svg%3E"); width:24px; height:22px; top:-13px; filter:drop-shadow(0 1px 2px rgba(120,10,40,.45)); }
+/* สงกรานต์: ขันน้ำสีฟ้าใส ขอบดาวเรืองสีส้ม มีดอกดาวเรืองเกาะด้านบน */
+html[data-fest="songkran"] .wheel-hub{ background:radial-gradient(circle at 35% 28%, #FFFFFF 0%, #BFEFFF 50%, #52C6E8 100%); box-shadow:0 0 0 3px #FFFFFF, 0 0 0 6px #FFB000, 0 8px 18px rgba(11,58,76,.4); }
+html[data-fest="songkran"] .wheel-hub-num{ color:#065A7A; }
+html[data-fest="songkran"] .wheel-hub-label{ color:#0B6F94; }
+html[data-fest="songkran"] .wheel-hub::before{ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cg fill='%23FFB000' stroke='%23fff' stroke-width='.7'%3E%3Ccircle cx='10' cy='4' r='3.2'/%3E%3Ccircle cx='15.2' cy='7' r='3.2'/%3E%3Ccircle cx='15.2' cy='13' r='3.2'/%3E%3Ccircle cx='10' cy='16' r='3.2'/%3E%3Ccircle cx='4.8' cy='13' r='3.2'/%3E%3Ccircle cx='4.8' cy='7' r='3.2'/%3E%3C/g%3E%3Ccircle cx='10' cy='10' r='3' fill='%23C45A00'/%3E%3C/svg%3E"); width:24px; height:24px; top:-14px; }
+/* ลอยกระทง: กระทงเรืองแสง พื้นน้ำเงินเข้ม ตัวเลขสีทอง มีเปลวเทียนด้านบน */
+html[data-fest="loykrathong"] .wheel-hub{ background:radial-gradient(circle at 50% 38%, #2B4FA6 0%, #14297A 60%, #0A1740 100%); box-shadow:0 0 0 3px #FFE08A, 0 0 0 5px #B97F1C, 0 0 22px 4px rgba(255,170,40,.55), 0 8px 18px rgba(0,0,0,.5); }
+html[data-fest="loykrathong"] .wheel-hub-num{ color:#FFD36A; text-shadow:0 0 8px rgba(255,170,40,.8); }
+html[data-fest="loykrathong"] .wheel-hub-label{ color:#E7D9A8; }
+html[data-fest="loykrathong"] .wheel-hub::before{ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 18'%3E%3Cpath d='M7 1c3 4 5 6 5 9.5a5 5 0 0 1-10 0C2 7 4 5 7 1z' fill='%23FFB62E'/%3E%3Cpath d='M7 8c1.4 2 2 3 2 4.4a2 2 0 0 1-4 0C5 11 5.6 10 7 8z' fill='%23FFF3C4'/%3E%3C/svg%3E"); width:16px; height:22px; top:-17px; filter:drop-shadow(0 0 6px rgba(255,170,40,.9)); }
+/* คริสต์มาส: ลูกบอลประดับต้นคริสต์มาสสีแดง มีฝาทองด้านบน */
+html[data-fest="christmas"] .wheel-hub{ background:radial-gradient(circle at 35% 28%, #FF8A8A 0%, #C21F2E 52%, #7E0F1B 100%); box-shadow:0 0 0 3px #F2C14E, 0 0 0 5px #FFFFFF, 0 8px 18px rgba(0,0,0,.5); }
+html[data-fest="christmas"] .wheel-hub-num{ color:#FFFFFF; text-shadow:0 1px 2px rgba(60,0,10,.5); }
+html[data-fest="christmas"] .wheel-hub-label{ color:#FFE9E9; }
+html[data-fest="christmas"] .wheel-hub::before{ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 12'%3E%3Crect x='2' y='3' width='12' height='9' rx='1.5' fill='%23F2C14E'/%3E%3Cpath d='M5 3V1.5a3 3 0 0 1 6 0V3' fill='none' stroke='%23B97F1C' stroke-width='1.5'/%3E%3C/svg%3E"); width:16px; height:12px; top:-14px; border-radius:2px; }
+
+/* ลอยกระทง: ฉากล่างสูงขึ้นเล็กน้อยให้เห็นกระทงเต็มดวง */
+html[data-fest="loykrathong"] .fest-bottom{ height:58px; }
+html[data-fest="loykrathong"] .app{ padding-bottom:max(48px, env(safe-area-inset-bottom)); }
+
+/* ---------- หน้าประวัติ: พวงตกแต่งหัวแผ่น + สีหัวข้อตามธีม (เนื้อหาด้านล่างคงเดิมเพื่อให้อ่านตัวเลขง่าย) ---------- */
+.hist-garland{ display:none; }
+html[data-fest] .hist-garland{ display:block; flex:none; height:22px; overflow:hidden; }
+.hist-garland svg{ display:block; width:100%; height:100%; }
+html[data-fest="valentine"] .history-title{ color:#A31342; } html[data-fest="valentine"] .sheet-grip{ background:#F28FB0; }
+html[data-fest="songkran"] .history-title{ color:#065A7A; } html[data-fest="songkran"] .sheet-grip{ background:#52C6E8; }
+html[data-fest="loykrathong"] .history-title{ color:#1B2F6E; } html[data-fest="loykrathong"] .sheet-grip{ background:#E8B94A; }
+html[data-fest="christmas"] .history-title{ color:#14653A; } html[data-fest="christmas"] .sheet-grip{ background:#2E9A5A; }
+html[data-fest="loykrathong"] .history-header .icon-btn, html[data-fest="christmas"] .history-header .icon-btn{ color:var(--ink-2); }
+
+/* ============================================================
+   JACKPOT CELEBRATION — รัศมีทองหมุนช้าหลังตั๋ว + ฝนเหรียญ/ดาวทอง + หัวข้อทองวิบวับ
+   ใช้เมื่อ #revealCard[data-jp="1"] (ตั้งใน presentTicket) — ไม่มีแฟลชเต็มจอ
+   ============================================================ */
+.app[data-jp="1"][data-state="result"] .board::before{
+  inset:-30%; opacity:1;
+  background:
+    radial-gradient(circle, rgba(255,226,140,.7) 0%, rgba(255,214,102,.25) 34%, transparent 62%),
+    repeating-conic-gradient(from 0deg, rgba(255,214,102,.5) 0 7deg, transparent 7deg 22.5deg);
+  -webkit-mask:radial-gradient(circle, #000 0 30%, transparent 68%); mask:radial-gradient(circle, #000 0 30%, transparent 68%);
+  animation:jpRays 26s linear infinite;
+}
+@keyframes jpRays{ to{ transform:rotate(360deg); } }
+.app[data-jp="1"][data-state="result"] .title{
+  background:linear-gradient(90deg,#7A4E05 0%,#B97F0C 30%,#E0A21C 50%,#B97F0C 70%,#7A4E05 100%);   /* ทองเข้ม อ่านชัดบนพื้นสว่าง */
+  background-size:220% 100%; -webkit-background-clip:text; background-clip:text;
+  color:transparent; -webkit-text-fill-color:transparent;
+  animation:jpShine 2.6s ease-in-out infinite;
+}
+@keyframes jpShine{ 0%{ background-position:100% 0; } 100%{ background-position:-120% 0; } }
+.confetti-piece.gold{
+  background:radial-gradient(circle at 35% 30%, #FFF3C4 0%, #FFC93C 55%, #B97F1C 100%);
+  border-radius:50%; box-shadow:0 0 6px rgba(255,201,60,.7); opacity:1;
+}
+.confetti-piece.gold.star{
+  clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);
+  border-radius:0; box-shadow:none; background:#FFD966;
+}
+@media (prefers-reduced-motion: reduce){
+  .app[data-jp="1"][data-state="result"] .board::before, .app[data-jp="1"][data-state="result"] .title{ animation:none; }
+}
+html[data-fest="loykrathong"] .app[data-jp="1"][data-state="result"] .title, html[data-fest="christmas"] .app[data-jp="1"][data-state="result"] .title{
+  background-image:linear-gradient(90deg,#E0A21C 0%,#FFD966 30%,#FFF3C4 50%,#FFD966 70%,#E0A21C 100%);   /* พื้นมืด ใช้ทองสว่าง */
+}
+
+/* ============================================================
+   หมุนใหม่ด้วยแต้ม — ปุ่มรองใต้ "ตกลง" + หน้ายืนยัน
+   ============================================================ */
+/* ปุ่มคู่ (ตอนมีสิทธิ์ลุ้นอีกครั้ง): ลุ้นอีกครั้ง (ซ้าย รอง) + ตกลง (ขวา หลัก) — ไม่มีสิทธิ์ = ปุ่มตกลงเต็มเหมือนเดิม */
+.claim-row{ display:contents; }
+.claim-row.two{ display:flex; gap:10px; align-items:stretch; width:min(92%,340px); margin:0 auto; }
+.claim-row.two .btn.primary.claim{ flex:1 1 0; width:auto; margin:0; height:58px; display:flex; align-items:center; justify-content:center; }
+.btn.ghost.respin{
+  --rs-fg:var(--red-deep); --rs-bd:var(--gold-deep);
+  --rs-bg:linear-gradient(180deg,#FFFBEA 0%,#FFEFC0 100%);
+  flex:1 1 0; width:auto; margin:0; height:58px; border-radius:999px; padding:0 10px;
+  display:flex; align-items:center; justify-content:center; gap:7px; white-space:nowrap;
+  font-size:15px; font-weight:600; letter-spacing:.01em; color:var(--rs-fg);
+  background:var(--rs-bg);
+  box-shadow:inset 0 0 0 1.5px var(--rs-bd), inset 0 2px 0 rgba(255,255,255,.7), 0 8px 16px -10px rgba(0,0,0,.35);
+}
+.btn.ghost.respin:hover{ background:var(--rs-bg); filter:brightness(1.03); }
+/* ไอคอนลูกศรวนกลับ บอกว่า "ลองอีกครั้ง" (ต่างจากปุ่มตกลงที่ไม่มีไอคอน) */
+.btn.ghost.respin::before{
+  content:""; flex:none; width:18px; height:18px; background:currentColor;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 12a8 8 0 1 1-2.6-5.9'/%3E%3Cpath d='M20 4v5h-5'/%3E%3C/svg%3E") center/contain no-repeat;
+          mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 12a8 8 0 1 1-2.6-5.9'/%3E%3Cpath d='M20 4v5h-5'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+html[data-fest="valentine"] .btn.ghost.respin{ --rs-fg:#A31342; --rs-bd:#E0315B; --rs-bg:linear-gradient(180deg,#FFF5F8 0%,#FFD9E4 100%); }
+html[data-fest="songkran"] .btn.ghost.respin{ --rs-fg:#065A7A; --rs-bd:#1597C2; --rs-bg:linear-gradient(180deg,#F4FCFF 0%,#CDEFFA 100%); }
+html[data-fest="loykrathong"] .btn.ghost.respin{ --rs-fg:#FFE08A; --rs-bd:#E8B94A; --rs-bg:linear-gradient(180deg,rgba(255,224,138,.16) 0%,rgba(255,224,138,.07) 100%); }
+html[data-fest="christmas"] .btn.ghost.respin{ --rs-fg:#FFE9A8; --rs-bd:#F2C14E; --rs-bg:linear-gradient(180deg,rgba(255,233,168,.16) 0%,rgba(255,233,168,.07) 100%); }
+.respin-sheet{ position:fixed; inset:0; z-index:300; display:flex; align-items:flex-end; justify-content:center;
+  background:rgba(28,35,32,.45); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); }
+.respin-sheet[hidden]{ display:none; }
+.respin-card{ width:100%; max-width:440px; background:#fff; color:#2B1A1A; text-align:center;
+  border-radius:24px 24px 0 0; padding:26px 24px max(28px, env(safe-area-inset-bottom)); animation:respinUp .28s ease-out; }
+@keyframes respinUp{ from{ transform:translateY(24px); opacity:0; } to{ transform:none; opacity:1; } }
+.respin-card h3{ margin:0 0 8px; font-size:17px; font-weight:600; }
+.respin-card p{ margin:0 0 6px; font-size:14px; line-height:1.65; color:#6B5A5A; }
+.respin-card b{ color:#B3121F; }
+.respin-card .muted{ color:#8A7B7B; }
+.respin-row{ display:flex; gap:10px; margin-top:18px; }
+.respin-row button{ flex:1; height:48px; border-radius:999px; border:0; font:500 15px inherit; font-family:inherit; cursor:pointer; }
+.respin-no{ background:#F1ECE8; color:#2B1A1A; }
+.respin-yes{ background:linear-gradient(180deg,#E0303D,#86101A); color:#FFF6DA; }
+@media (prefers-reduced-motion: reduce){ .respin-card{ animation:none; } }
+
+/* ปุ่มลุ้นอีกครั้ง: เลื่อนเข้าเบาๆ แล้วลูกศรหมุนครบรอบเดียว (ไม่วนซ้ำ) */
+.btn.ghost.respin.in{ animation:rsIn .45s cubic-bezier(.2,.8,.2,1) both; }
+.btn.ghost.respin.in::before{ animation:rsSpin .9s cubic-bezier(.45,0,.2,1) .45s 1 both; }
+@keyframes rsIn{ from{ opacity:0; transform:translateX(-12px) scale(.94); } to{ opacity:1; transform:none; } }
+@keyframes rsSpin{ from{ transform:rotate(0); } to{ transform:rotate(-360deg); } }
+@media (prefers-reduced-motion: reduce){ .btn.ghost.respin.in, .btn.ghost.respin.in::before{ animation:none; } }
+
+/* ===== ตัวช่วยก่อนลุ้น ===== */
+.start-row{ display:flex; gap:10px; align-items:stretch; width:min(92%,340px); margin:0 auto; }
+.start-row .btn.primary{ flex:1 1 0; width:auto; margin:0; height:58px; display:flex; align-items:center; justify-content:center; }
+.start-row .btn.primary.hide{ display:none; }   /* ต้องมี: กฎด้านบนเฉพาะเจาะจงกว่า .btn.hide จึงทำให้ปุ่มไม่ซ่อน */
+.start-row:has(.btn.primary.hide){ display:none; }
+.start-row .btn.ghost.respin.helper{ flex:0 0 auto; min-width:118px; padding:0 16px; }
+.start-row .btn.ghost.respin.helper::before{
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M12 2l2.2 6.3L20.5 10l-6.3 1.7L12 18l-2.2-6.3L3.5 10l6.3-1.7z'/%3E%3Cpath d='M19 15l1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1z'/%3E%3C/svg%3E") center/contain no-repeat;
+          mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M12 2l2.2 6.3L20.5 10l-6.3 1.7L12 18l-2.2-6.3L3.5 10l6.3-1.7z'/%3E%3Cpath d='M19 15l1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1z'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+.start-row .btn.ghost.respin.helper.on{ box-shadow:inset 0 0 0 2px var(--rs-bd), inset 0 2px 0 rgba(255,255,255,.7), 0 8px 16px -10px rgba(0,0,0,.35); }
+.helper-card{ text-align:left; }
+.helper-card h3{ text-align:center; }
+.helper-card .hs-sub{ text-align:center; margin-bottom:14px; }
+.hs-list{ display:flex; flex-direction:column; gap:9px; }
+.helper-card .hs-note{ text-align:center; font-size:12px; line-height:1.5; color:#9A8A8A; margin:10px 0 2px; }
+.hs-opt{ display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:12px 14px; border-radius:16px;
+  border:1.5px solid #EADFD8; background:#FFFDFB; color:#2B1A1A; font-family:inherit; cursor:pointer; }
+.hs-opt .hs-radio{ flex:none; width:20px; height:20px; border-radius:50%; border:2px solid #CDBFB6; background:#fff; position:relative; }
+.hs-opt .hs-txt{ flex:1; min-width:0; }
+.hs-opt .hs-name{ display:block; font-size:15px; font-weight:600; line-height:1.35; }
+.hs-opt .hs-desc{ display:block; font-size:12.5px; line-height:1.5; color:#7A6A6A; margin-top:1px; }
+.hs-opt .hs-price{ flex:none; font-size:15px; font-weight:700; color:#B3121F; white-space:nowrap; }
+.hs-opt.sel{ border-color:#B3121F; background:#FFF4F2; box-shadow:0 0 0 1px #B3121F inset; }
+.hs-opt.sel .hs-radio{ border-color:#B3121F; background:#B3121F; }
+.hs-opt.sel .hs-radio::after{ content:""; position:absolute; left:5px; top:2px; width:5px; height:9px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
+.hs-opt.off{ opacity:.45; cursor:not-allowed; }
+.hs-opt.off .hs-price{ color:#8A7B7B; font-size:13px; font-weight:600; }
+.respin-yes:disabled{ background:#E9E2DD; color:#A59A94; }
