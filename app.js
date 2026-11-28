@@ -10,10 +10,10 @@ const LIFF_ID = '2004478373-pUgVSZTj';
 
 // milestone → ชื่อคูปอง — ลำดับนี้คือลำดับที่ stock queue จะเปิดก่อน-หลัง
 const LB_CONFIG = [
-  { milestone: 7,  name: 'Silver',   tier: 'silver' },
-  { milestone: 14, name: 'Gold',     tier: 'gold'   },
-  { milestone: 21, name: 'Platinum', tier: 'plat'   },
-  { milestone: 28, name: 'Legend',   tier: 'legend' },
+  { milestone: 7,  name: 'กล่อง 7 วัน',  tier: 'silver' },
+  { milestone: 14, name: 'กล่อง 14 วัน', tier: 'gold'   },
+  { milestone: 21, name: 'กล่อง 21 วัน', tier: 'plat'   },
+  { milestone: 28, name: 'กล่อง 28 วัน', tier: 'legend' },
 ];
 const TIER_COLORS = { silver:'#7F93AD', gold:'#B38A38', plat:'#8574B5', legend:'#B5505E', paid:'#3F98A8' };
 
@@ -248,14 +248,14 @@ async function initLiff() {
 //  ชื่อคูปอง / ข้อความประกอบ
 // ============================================================
 function boxNameFor(milestone) {
-  if (String(milestone) === 'PAID') return 'Bonus';
+  if (String(milestone) === 'PAID') return 'กล่องชำระบิลตรงเวลา';
   const cfg = LB_CONFIG.find(c => c.milestone === Number(milestone));
   return cfg ? cfg.name : 'Special';
 }
 function couponSummary(milestone) {
   const reason = stockLabels[String(milestone)];
   const via = /^(เช็คอิน|ชำระ)/.test(reason || '') ? 'จากการ' : 'จาก';
-  return reason ? `สิทธิ์ ${boxNameFor(milestone)} ${via}${reason}` : `สิทธิ์ ${boxNameFor(milestone)}`;
+  return reason ? `สิทธิ์${via}${reason}` : `สิทธิ์ ${boxNameFor(milestone)}`;
 }
 
 function updateStockCount() {
@@ -890,11 +890,11 @@ async function landOnAmount(amount) {
 // ตั๋วเฉลยรางวัล — เรียกตอนวงล้อหยุดแล้ว (celebrate=true) หรือตอนกู้คืนผลเก่าแบบเงียบๆ (celebrate=false)
 function presentTicket(milestone, amount, celebrate = true) {
   const isJackpot = Number(amount) >= JACKPOT_AMOUNT;
-  ticketTier.textContent = isJackpot ? 'Jackpot' : `${boxNameFor(milestone)} Coupon`;
+  ticketTier.textContent = isJackpot ? 'Jackpot' : boxNameFor(milestone);
   ticket.classList.toggle('jackpot', isJackpot);
   revealCard.dataset.jp = isJackpot ? '1' : '0';   // เปิดแสงรัศมีทองหลังตั๋วผ่าน CSS
   ticketDesc.textContent = 'หักจากบิลรอบถัดไปโดยอัตโนมัติ';
-  ticket.setAttribute('aria-label', `${boxNameFor(milestone)} Coupon ส่วนลดค่าเช่า ${amount} บาท`);
+  ticket.setAttribute('aria-label', `${boxNameFor(milestone)} ส่วนลดค่าเช่า ${amount} บาท`);
   ticket.classList.add('show');
   claimBtn.classList.add('show');
   if (celebrate) {
@@ -1183,7 +1183,12 @@ function updateRoomLabel(room) {
 }
 // แสดง "ห้อง 208 · Silver" ให้ผู้ใช้เห็นว่ากำลังใช้สิทธิ์ระดับไหน
 function renderRoomBadge() {
-  cabRoomBadge.textContent = 'ห้อง ' + currentRoomNo + (currentTierLabel ? ' · ' + currentTierLabel : '');
+  if (!currentRoomNo) return;
+  cabRoomBadge.hidden = false;
+  cabRoomBadge.innerHTML =
+    '<span class="rp-room">ห้อง ' + esc(currentRoomNo) + '</span>' +
+    (currentTierLabel ? '<span class="rp-sep">·</span><i class="rp-dot"></i><span>ระดับสมาชิก ' + esc(currentTierLabel) + '</span>' : '') +
+    '<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5 7 5l-3.5 3.5"/></svg>';
 }
 
 function applyRoomData(result) {
@@ -1297,10 +1302,10 @@ function formatMonthLabel(monthKey) {
 
 function getTierMeta(tierRaw) {
   if (String(tierRaw).trim() === 'PAID') {
-    return { name: 'Bonus', reason: stockLabels.PAID, color: TIER_COLORS.paid };
+    return { name: 'กล่องชำระบิลตรงเวลา', reason: '', color: TIER_COLORS.paid };
   }
   const cfg = LB_CONFIG.find(c => c.milestone === Number(tierRaw));
-  if (cfg) return { name: cfg.name, reason: stockLabels[String(cfg.milestone)] || '', color: TIER_COLORS[cfg.tier] };
+  if (cfg) return { name: cfg.name, reason: '', color: TIER_COLORS[cfg.tier] };
   return { name: 'ไม่ทราบ', reason: '', color: '#8B929C' };
 }
 
@@ -1330,6 +1335,130 @@ document.addEventListener('keydown', (e) => {
     closeHistoryOverlay();
   }
 });
+
+// ============================================================
+//  PROFILE SHEET — โปรไฟล์ย่อ ดึงข้อมูลตอนแตะป้ายเท่านั้น (หน้าวงล้อไม่ช้าลง) เก็บแคช 60 วินาที
+// ============================================================
+let pfLastFocus = null, pfCache = null;
+const PF_CACHE_MS = 60 * 1000;
+const pfOverlay = document.getElementById('profile-overlay');
+const pfBody = document.getElementById('pf-body');
+
+function pfSkeleton() {
+  const b = (w, h) => `<i class="pf-skel" style="width:${w};height:${h}"></i>`;
+  pfBody.innerHTML = `
+    <div class="pf-head"><div class="pf-av">${esc(currentRoomNo || '')}</div>
+      <div class="pf-name"><b>ห้อง ${esc(currentRoomNo || '')}</b>${b('55%','12px')}</div></div>
+    <div class="pf-total">${b('40%','12px')}<div style="height:8px"></div>${b('50%','28px')}</div>
+    <div class="pf-cards">${b('100%','62px')}${b('100%','62px')}</div>
+    <div style="height:14px"></div>${b('100%','44px')}`;
+}
+function pfSinceText(s) {
+  if (!s) return '';
+  const p = [];
+  if (s.years)  p.push(s.years + ' ปี');
+  if (s.months) p.push(s.months + ' เดือน');
+  if (s.days || !p.length) p.push((s.days || 0) + ' วัน');
+  return 'เช่ามา ' + p.join(' ');
+}
+function pfMonthsText(m) {
+  m = Math.max(0, Number(m) || 0);
+  const y = Math.floor(m / 12), r = m % 12, p = [];
+  if (y) p.push(y + ' ปี');
+  if (r || !y) p.push(r + ' เดือน');
+  return p.join(' ');
+}
+function pfHelperName(key) { return (HELPER_META[key] && HELPER_META[key].name) || key; }
+function renderProfile(d) {
+  const num = (n) => Number(n || 0).toLocaleString('th-TH');
+  const boxMap = {};
+  (d.boxes || []).forEach(b => { boxMap[String(b.tier)] = b; });
+  const dots = [7, 14, 21, 28].map(t => {
+    const b = boxMap[String(t)];
+    if (b && b.opened) return `<div class="pf-dot done"><i>✓</i>${t} วัน</div>`;
+    if (b) return `<div class="pf-dot ready"><i>${t}</i>รอเปิด</div>`;
+    return `<div class="pf-dot"><i>${t}</i>${t} วัน</div>`;
+  }).join('');
+  const lines = [];
+  (d.helpers || []).forEach(h => {
+    const box = /^\d+$/.test(String(h.tier)) ? 'กล่อง ' + esc(h.tier) + ' วัน' : 'กล่องชำระบิลตรงเวลา';
+    const tags = [];
+    if (h.helper) tags.push(`<em class="pf-tag">ตัวช่วย ${esc(pfHelperName(h.helper))}</em>`);
+    if (h.respun) tags.push('<em class="pf-tag">ลุ้นอีกครั้ง</em>');
+    const amt = Number(h.discount || 0);
+    lines.push(`<li><span>${box}${tags.length ? '<br>' + tags.join(' ') : ''}</span><span>${amt > 0 ? 'ลด ' + num(amt) + ' บาท' : esc(h.prize || '-')}</span></li>`);
+  });
+  const since = pfSinceText(d.since);
+  const tierObj = d.tier && d.tier.label ? d.tier : null;
+  const streak = Number(d.streak || 0);
+  const nextBox = [7, 14, 21, 28].find(t => !boxMap[String(t)]);
+  const nextLine = nextBox
+    ? (nextBox - streak > 0
+        ? `เช็คอินต่อเนื่อง ${num(streak)} วัน · เช็คอินอีก ${nextBox - streak} วัน ได้กล่อง ${nextBox} วัน`
+        : `เช็คอินต่อเนื่อง ${num(streak)} วัน · เช็คอินวันนี้เพื่อรับกล่อง ${nextBox} วัน`)
+    : `เช็คอินต่อเนื่อง ${num(streak)} วัน · ได้ครบทุกกล่องแล้วรอบนี้`;
+  const tierHtml = tierObj ? `
+    <div class="pf-tier">
+      <div class="pf-tier-top"><b>${esc(tierObj.emoji || '')} ${esc(tierObj.label)}</b></div>
+      <div class="pf-bar"><i style="width:${Math.max(0, Math.min(100, Number(tierObj.progress) || 0))}%"></i></div>
+      <p class="pf-tier-next">${tierObj.nextLabel ? 'ระดับถัดไป ' + esc((tierObj.nextEmoji || '') + ' ' + tierObj.nextLabel).trim() + ' · อีก ' + esc(pfMonthsText(tierObj.monthsLeft)) : 'ระดับสูงสุดแล้ว'}</p>
+      <small>ระดับสมาชิกนับจากระยะเวลาที่เช่า และมีผลต่อโอกาสได้ส่วนลดในกล่องสุ่ม</small>
+    </div>` : '';
+  const bonus = Number(d.birthday_bonus || 0);
+  pfBody.innerHTML = `
+    <div class="pf-head">
+      <div class="pf-av">${esc(d.room || currentRoomNo)}</div>
+      <div class="pf-name"><b>ห้อง ${esc(d.room || currentRoomNo)}</b>${since ? `<small>${esc(since)}</small>` : ''}</div>
+      ${(tierObj ? tierObj.label : currentTierLabel) ? `<span class="pf-chip">สมาชิก ${esc(tierObj ? tierObj.label : currentTierLabel)}</span>` : ''}
+    </div>
+    <div class="pf-total">
+      <small>ส่วนลดรวมที่ได้รอบนี้</small>
+      <strong>${num(d.total_discount)}<span>บาท</span></strong>
+      <em>จากกล่อง ${num(d.box_discount)} + แต้มเช็คอินคงเหลือ ${num(d.points)}${bonus > 0 ? ' + โบนัสวันเกิด ' + num(bonus) : ''}</em>
+    </div>
+    ${tierHtml}
+    <h3 class="pf-sec">กล่องสุ่มรอบนี้</h3>
+    <div class="pf-dots">${dots}</div>
+    <p class="pf-next">${esc(nextLine)}</p>
+    <h3 class="pf-sec">ประวัติการเปิดกล่องรอบนี้</h3>
+    ${lines.length ? `<ul class="pf-help">${lines.join('')}</ul>` : '<p class="pf-empty">ยังไม่ได้เปิดกล่องรอบนี้</p>'}
+    <p class="pf-note">แต้มเช็คอินที่ไม่ได้ใช้ยังเป็นส่วนลดบิลตามปกติ กล่องที่ไม่ได้เปิดจะหมดอายุเมื่อตัดบิล</p>
+    <div class="pf-actions"><button type="button" class="btn ghost" id="pfHistory">ดูประวัติการลุ้น</button></div>`;
+  document.getElementById('pfHistory').addEventListener('click', () => { closeProfile(); openHistoryOverlay(); });
+}
+async function loadProfile() {
+  if (pfCache && pfCache.room === currentRoomNo && Date.now() - pfCache.ts < PF_CACHE_MS) { renderProfile(pfCache.data); return; }
+  pfSkeleton();
+  try {
+    const res = await callGAS('profileInfo', { roomNo: currentRoomNo });
+    if (!res || !res.success || !res.profile) throw new Error('load');
+    pfCache = { room: currentRoomNo, ts: Date.now(), data: res.profile };
+    if (pfOverlay.classList.contains('active')) renderProfile(res.profile);
+  } catch (e) {
+    if (!pfOverlay.classList.contains('active')) return;
+    pfBody.innerHTML = '<div class="h-empty"><p class="h-empty-title">โหลดข้อมูลไม่สำเร็จ</p><p>กรุณาลองอีกครั้ง</p><button class="btn ghost" id="pfRetry" type="button">ลองอีกครั้ง</button></div>';
+    document.getElementById('pfRetry').addEventListener('click', loadProfile);
+  }
+}
+function openProfile() {
+  if (!currentRoomNo || pfOverlay.classList.contains('active')) return;
+  pfLastFocus = document.activeElement;
+  pfOverlay.classList.add('active');
+  document.body.classList.add('lock');
+  revealCard.inert = true;
+  document.getElementById('profile-close').focus();
+  loadProfile();
+}
+function closeProfile() {
+  pfOverlay.classList.remove('active');
+  document.body.classList.remove('lock');
+  revealCard.inert = false;
+  if (pfLastFocus && pfLastFocus.focus) pfLastFocus.focus();
+}
+cabRoomBadge.addEventListener('click', openProfile);
+document.getElementById('profile-close').addEventListener('click', closeProfile);
+pfOverlay.addEventListener('click', (e) => { if (e.target === pfOverlay) closeProfile(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pfOverlay.classList.contains('active')) closeProfile(); });
 
 function historyMessage(title, sub, withRetry) {
   return `
@@ -1488,6 +1617,8 @@ async function init() {
 
   if (params.get('view') === 'history' && currentRoomNo) {
     openHistoryOverlay();
+  } else if (params.get('profile') === '1' && currentRoomNo) {
+    openProfile();
   }
 
   removeBootMask();
